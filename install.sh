@@ -237,9 +237,61 @@ if [ $? -ne 0 ]; then
     echo "Error al instalar ImageMagick. Abortando."
     exit 1
 fi
-
 echo "ImageMagick instalado correctamente."
 
+sleep 5
+
+# Instalar Scrub
+echo "Instalando Scrub..."
+sudo apt install scrub -y
+if [ $? -ne 0 ]; then
+    echo "Error al instalar Scrub. Abortando."
+    exit 1
+fi
+echo "Scrub instalado correctamente."
+
+sleep 5
+
+# Cambiar al directorio Downloads del usuario no privilegiado
+echo "Cambiando al directorio Downloads..."
+sudo -u $SUDO_USER cd "$user_home/Downloads"
+
+# Clonar el recurso blue-sky
+echo "Clonando el repositorio blue-sky..."
+sudo -u $SUDO_USER git clone https://github.com/VaughnValle/blue-sky
+if [ $? -ne 0 ]; then
+    echo "Error al clonar el repositorio blue-sky. Abortando."
+    exit 1
+fi
+
+echo "Repositorio blue-sky clonado con éxito en la carpeta Downloads."
+
+sleep 5
+
+# Crear el directorio para la configuración de Polybar
+echo "Creando directorio de configuración de Polybar para el usuario no privilegiado..."
+sudo -u $SUDO_USER mkdir -p "$user_home/.config/polybar"
+
+echo "Directorio de configuración de Polybar creado."
+
+sleep 5
+
+# Copiar los archivos de configuración de Polybar
+echo "Copiando archivos de configuración de Polybar..."
+sudo -u $SUDO_USER cp -r "$user_home/KaliEntorno/Config/polybar/." "$user_home/.config/polybar/"
+
+echo "Archivos de configuración de Polybar copiados."
+
+sleep 5
+
+# Copiar las fuentes de Polybar al directorio de fuentes del sistema
+echo "Copiando fuentes de Polybar al directorio del sistema..."
+sudo cp "$user_home/KaliEntorno/Config/polybar/fonts/"* /usr/share/fonts/truetype/
+
+# Actualizar la caché de fuentes
+sudo fc-cache -f -v
+
+echo "Fuentes de Polybar copiadas al directorio de fuentes del sistema y caché actualizada."
 
 
 sleep 5
