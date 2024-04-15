@@ -252,13 +252,9 @@ echo "Scrub instalado correctamente."
 
 sleep 5
 
-# Cambiar al directorio Downloads del usuario no privilegiado
-echo "Cambiando al directorio Downloads..."
-sudo -u $SUDO_USER cd "$user_home/Downloads"
-
-# Clonar el recurso blue-sky
-echo "Clonando el repositorio blue-sky..."
-sudo -u $SUDO_USER git clone https://github.com/VaughnValle/blue-sky
+# Clonar el recurso blue-sky en el directorio Downloads del usuario no privilegiado
+echo "Clonando el repositorio blue-sky en el directorio Downloads..."
+sudo -u $SUDO_USER git -C "$user_home/Downloads" clone https://github.com/VaughnValle/blue-sky
 if [ $? -ne 0 ]; then
     echo "Error al clonar el repositorio blue-sky. Abortando."
     exit 1
@@ -278,16 +274,16 @@ sleep 5
 
 # Copiar los archivos de configuración de Polybar
 echo "Copiando archivos de configuración de Polybar..."
-sudo -u $SUDO_USER cp -r "$user_home/KaliEntorno/Config/polybar/*" "$user_home/.config/polybar/"
+sudo -u $SUDO_USER cp -a $user_home/KaliEntorno/Config/polybar/. "$user_home/.config/polybar/"
 
 echo "Archivos de configuración de Polybar copiados."
-
 sleep 5
-
 # Copiar las fuentes de Polybar al directorio de fuentes del sistema
 echo "Copiando fuentes de Polybar al directorio del sistema..."
-sudo cp "$user_home/KaliEntorno/Config/polybar/fonts/*" /usr/share/fonts/truetype/
+sudo cp $user_home/KaliEntorno/Config/polybar/fonts/. /usr/share/fonts/truetype/
 
+
+sleep 5
 # Actualizar la caché de fuentes
 sudo fc-cache -f -v
 
