@@ -278,9 +278,10 @@ sudo -u $SUDO_USER cp -a $user_home/KaliEntorno/Config/polybar/. "$user_home/.co
 
 echo "Archivos de configuración de Polybar copiados."
 sleep 5
-# Copiar las fuentes de Polybar al directorio de fuentes del sistema
+
 echo "Copiando fuentes de Polybar al directorio del sistema..."
-sudo cp $user_home/KaliEntorno/Config/polybar/fonts/. /usr/share/fonts/truetype/
+sudo cp -r "$user_home/KaliEntorno/Config/polybar/fonts/"* /usr/share/fonts/truetype/
+
 
 
 sleep 5
@@ -288,6 +289,53 @@ sleep 5
 sudo fc-cache -f -v
 
 echo "Fuentes de Polybar copiadas al directorio de fuentes del sistema y caché actualizada."
+
+sleep 5
+
+# Crear la carpeta de configuración para picom como usuario no privilegiado
+echo "Creando carpeta picom en .config..."
+sudo -u $SUDO_USER mkdir -p "$user_home/.config/picom"
+if [ $? -ne 0 ]; then
+    echo "Error al crear la carpeta picom. Abortando."
+    exit 1
+fi
+echo "Carpeta picom creada exitosamente en .config."
+
+sleep 5
+
+# Copiar el archivo de configuración de picom al directorio de configuración de picom del usuario no privilegiado
+echo "Copiando archivo de configuración picom.conf a la carpeta de configuración de picom..."
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/Config/picom/picom.conf" "$user_home/.config/picom/picom.conf"
+if [ $? -ne 0 ]; then
+    echo "Error al copiar el archivo picom.conf. Abortando."
+    exit 1
+fi
+echo "Archivo picom.conf copiado exitosamente a .config/picom."
+
+sleep 5
+
+
+# Instalar Neofetch
+echo "Instalando Neofetch..."
+sudo apt install neofetch -y
+if [ $? -ne 0 ]; then
+    echo "Error al instalar Neofetch. Abortando."
+    exit 1
+fi
+echo "Neofetch instalado correctamente."
+
+sleep 5
+
+# Crear un enlace simbólico para que root use la configuración .zshrc del usuario no privilegiado
+echo "Configurando root para usar la configuración .zshrc del usuario no privilegiado..."
+ln -sf "$user_home/.zshrc" /root/.zshrc
+if [ $? -ne 0 ]; then
+    echo "Error al crear el enlace simbólico para .zshrc de root. Abortando."
+    exit 1
+fi
+echo "Root ahora usará la configuración .zshrc del usuario no privilegiado."
+
+
 
 
 sleep 5
