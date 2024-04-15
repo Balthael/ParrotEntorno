@@ -278,7 +278,7 @@ sleep 5
 
 # Copiar los archivos de configuración de Polybar
 echo "Copiando archivos de configuración de Polybar..."
-sudo -u $SUDO_USER cp -r "$user_home/KaliEntorno/Config/polybar/." "$user_home/.config/polybar/"
+sudo -u $SUDO_USER cp -r "$user_home/KaliEntorno/Config/polybar/*" "$user_home/.config/polybar/"
 
 echo "Archivos de configuración de Polybar copiados."
 
@@ -286,7 +286,7 @@ sleep 5
 
 # Copiar las fuentes de Polybar al directorio de fuentes del sistema
 echo "Copiando fuentes de Polybar al directorio del sistema..."
-sudo cp "$user_home/KaliEntorno/Config/polybar/fonts/"* /usr/share/fonts/truetype/
+sudo cp "$user_home/KaliEntorno/Config/polybar/fonts/*" /usr/share/fonts/truetype/
 
 # Actualizar la caché de fuentes
 sudo fc-cache -f -v

@@ -18,7 +18,7 @@ bspc rule -a Kupfer.py focus=on
 bspc rule -a Screenkey manage=off
 
 # Establece el fondo de pantalla usando la variable $HOME para el directorio del usuario
-/usr/bin/feh --bg-fill "$HOME/fondos/fondo0.jpg" &
+/usr/bin/feh --bg-fill "$HOME/fondos/fondo1.jpg" &
 
 # Iniciar otras aplicaciones
 vmware-user-suid-wrapper &
