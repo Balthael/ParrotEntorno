@@ -326,6 +326,55 @@ echo "Neofetch instalado correctamente."
 
 sleep 5
 
+# Clonar el repositorio powerlevel10k y actualizar el archivo .zshrc para el usuario no privilegiado
+echo "Configurando el tema powerlevel10k para el usuario no privilegiado..."
+sleep 2
+sudo -u $SUDO_USER git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$user_home/powerlevel10k"
+echo "source $user_home/powerlevel10k/powerlevel10k.zsh-theme" >> "$user_home/.zshrc"
+if [ $? -ne 0 ]; then
+    echo "Error al configurar powerlevel10k. Abortando."
+    exit 1
+fi
+echo "Tema powerlevel10k configurado correctamente."
+
+sleep 5
+
+# Configurar el tema powerlevel10k para el usuario root
+echo "Configurando el tema powerlevel10k para el usuario root..."
+git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /root/powerlevel10k
+echo "source /root/powerlevel10k/powerlevel10k.zsh-theme" >> /root/.zshrc
+if [ $? -ne 0 ]; then
+    echo "Error al configurar powerlevel10k para root. Abortando."
+    exit 1
+fi
+
+echo "Tema powerlevel10k configurado correctamente para root."
+
+sleep 5
+
+# Copiar el archivo .zshrc del repositorio al directorio home del usuario no privilegiado
+echo "Copiando el archivo .zshrc desde el repositorio al directorio home del usuario..."
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/Config/zshrc/user/.zshrc" "$user_home/"
+if [ $? -ne 0 ]; then
+    echo "Error al copiar el archivo .zshrc. Abortando."
+    exit 1
+fi
+echo "Archivo .zshrc copiado correctamente al directorio home del usuario no privilegiado."
+# Ajustar los permisos del archivo .zshrc
+sudo chown $SUDO_USER:$SUDO_USER "$user_home/.zshrc"
+sudo chmod 644 "$user_home/.zshrc"
+echo "Permisos del archivo .zshrc ajustados correctamente."
+
+
+# Copiar el archivo .zshrc de root desde el repositorio a /root
+echo "Copiando el archivo .zshrc de root..."
+cp "$user_home/KaliEntorno/Config/zshrc/root/.zshrc" /root/.zshrc
+chown root:root /root/.zshrc
+chmod 644 /root/.zshrc
+echo "El archivo .zshrc de root ha sido copiado con los permisos adecuados."
+
+sleep 5
+
 # Crear un enlace simbólico para que root use la configuración .zshrc del usuario no privilegiado
 echo "Configurando root para usar la configuración .zshrc del usuario no privilegiado..."
 ln -sf "$user_home/.zshrc" /root/.zshrc
@@ -335,7 +384,48 @@ if [ $? -ne 0 ]; then
 fi
 echo "Root ahora usará la configuración .zshrc del usuario no privilegiado."
 
+sleep 5
 
+# Copiar todos los archivos de la carpeta lsd del repositorio KaliEntorno a /root
+echo "Copiando archivos de lsd a /root..."
+sudo cp -a "$user_home/KaliEntorno/lsd/." /root/
+if [ $? -ne 0 ]; then
+    echo "Error al copiar archivos de lsd. Abortando."
+    exit 1
+fi
+echo "Archivos de lsd copiados a /root."
+
+sleep 5
+
+# Instalar paquetes .deb con dpkg como root
+echo "Instalando bat y lsd..."
+sudo dpkg -i /root/bat_0.24.0_amd64.deb
+sudo dpkg -i /root/lsd_1.1.2_amd64.deb
+if [ $? -ne 0 ]; then
+    echo "Error al instalar bat o lsd. Abortando."
+    exit 1
+fi
+echo "bat y lsd instalados correctamente."
+
+# Instalación de fzf para el usuario no privilegiado
+echo "Instalando fzf para el usuario no privilegiado..."
+sudo -u $SUDO_USER git clone --depth 1 https://github.com/junegunn/fzf.git "$user_home/.fzf"
+sudo -u $SUDO_USER yes | "$user_home/.fzf/install"
+if [ $? -ne 0 ]; then
+    echo "Error al instalar fzf para el usuario no privilegiado. Abortando."
+    exit 1
+fi
+echo "fzf instalado correctamente para el usuario no privilegiado."
+
+# Instalación de fzf para el usuario root
+echo "Instalando fzf para root..."
+git clone --depth 1 https://github.com/junegunn/fzf.git /root/.fzf
+yes | /root/.fzf/install
+if [ $? -ne 0 ]; then
+    echo "Error al instalar fzf para root. Abortando."
+    exit 1
+fi
+echo "fzf instalado correctamente para root.
 
 
 sleep 5
