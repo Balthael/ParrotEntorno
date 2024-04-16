@@ -375,17 +375,6 @@ echo "El archivo .zshrc de root ha sido copiado con los permisos adecuados."
 
 sleep 5
 
-# Crear un enlace simbólico para que root use la configuración .zshrc del usuario no privilegiado
-echo "Configurando root para usar la configuración .zshrc del usuario no privilegiado..."
-ln -sf "$user_home/.zshrc" /root/.zshrc
-if [ $? -ne 0 ]; then
-    echo "Error al crear el enlace simbólico para .zshrc de root. Abortando."
-    exit 1
-fi
-echo "Root ahora usará la configuración .zshrc del usuario no privilegiado."
-
-sleep 5
-
 # Copiar todos los archivos de la carpeta lsd del repositorio KaliEntorno a /root
 echo "Copiando archivos de lsd a /root..."
 sudo cp -a "$user_home/KaliEntorno/lsd/." /root/
@@ -407,25 +396,33 @@ if [ $? -ne 0 ]; then
 fi
 echo "bat y lsd instalados correctamente."
 
-# Instalación de fzf para el usuario no privilegiado
-echo "Instalando fzf para el usuario no privilegiado..."
-sudo -u $SUDO_USER git clone --depth 1 https://github.com/junegunn/fzf.git "$user_home/.fzf"
-sudo -u $SUDO_USER yes | "$user_home/.fzf/install"
+sleep 5
+# Reemplazar el archivo .p10k.zsh con la versión personalizada del repositorio KaliEntorno
+echo "Actualizando archivo .p10k.zsh para el usuario no privilegiado..."
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/Config/Power10kNormal/.p10k.zsh" "$user_home/.p10k.zsh"
 if [ $? -ne 0 ]; then
-    echo "Error al instalar fzf para el usuario no privilegiado. Abortando."
+    echo "Error al actualizar .p10k.zsh. Abortando."
     exit 1
 fi
-echo "fzf instalado correctamente para el usuario no privilegiado."
+echo "Archivo .p10k.zsh actualizado correctamente."
 
-# Instalación de fzf para el usuario root
-echo "Instalando fzf para root..."
-git clone --depth 1 https://github.com/junegunn/fzf.git /root/.fzf
-yes | /root/.fzf/install
+
+# Reemplazar el archivo .p10k.zsh con la versión personalizada para root
+echo "Actualizando archivo .p10k.zsh para el usuario root..."
+cp "$user_home/KaliEntorno/Config/Power10kRoot/.p10k.zsh" /root/.p10k.zsh
 if [ $? -ne 0 ]; then
-    echo "Error al instalar fzf para root. Abortando."
+    echo "Error al actualizar .p10k.zsh para root. Abortando."
     exit 1
 fi
-echo "fzf instalado correctamente para root.
+
+# Crear un enlace simbólico para que root use la configuración .zshrc del usuario no privilegiado
+echo "Configurando root para usar la configuración .zshrc del usuario no privilegiado..."
+sudo ln -sf "$user_home/.zshrc" /root/.zshrc
+if [ $? -ne 0 ]; then
+    echo "Error al crear el enlace simbólico para .zshrc de root. Abortando."
+    exit 1
+fi
+echo "Root ahora usará la configuración .zshrc del usuario no privilegiado."
 
 
 sleep 5
