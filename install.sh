@@ -531,6 +531,27 @@ if [ $? -ne 0 ]; then
 fi
 echo "Repositorio NvChad clonado correctamente en la configuración nvim del usuario no privilegiado."
 
+sleep 5
+
+# Instalar Flameshot para capturas de pantalla
+echo "Instalando Flameshot..."
+sudo apt install flameshot -y
+if [ $? -ne 0 ]; then
+    echo "Error al instalar Flameshot. Abortando."
+    exit 1
+fi
+echo "Flameshot instalado correctamente."
+
+sleep 5
+
+# Instalar i3lock para bloqueo de pantalla
+echo "Instalando i3lock..."
+sudo apt install i3lock -y
+if [ $? -ne 0 ]; then
+    echo "Error al instalar i3lock. Abortando."
+    exit 1
+fi
+echo "i3lock instalado correctamente."
 
 sleep 5
 # Reiniciar la sesión de usuario
