@@ -552,6 +552,40 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 echo "i3lock instalado correctamente."
+sleep 5
+
+
+# Cambiar al directorio Downloads del usuario no privilegiado
+cd "$user_home/Downloads"
+
+# Clonar i3lock-fancy y compilarlo como usuario no privilegiado
+echo "Clonando i3lock-fancy desde GitHub en el directorio Downloads..."
+sudo -u $SUDO_USER git clone https://github.com/meskarune/i3lock-fancy.git
+
+# Verificar si el repositorio se clonó correctamente
+if [ $? -ne 0 ]; then
+    echo "Error al clonar el repositorio i3lock-fancy en Downloads. Abortando."
+    exit 1
+fi
+
+echo "Repositorio i3lock-fancy clonado correctamente en Downloads."
+
+# Cambiar al directorio i3lock-fancy
+cd i3lock-fancy
+
+# Instalar i3lock-fancy como usuario no privilegiado pero utilizando sudo para obtener privilegios de root
+echo "Instalando i3lock-fancy..."
+sudo make install
+
+# Verificar si i3lock-fancy se instaló correctamente
+if [ $? -ne 0 ]; then
+    echo "Error al instalar i3lock-fancy. Abortando."
+    exit 1
+fi
+
+echo "i3lock-fancy instalado correctamente."
+
+
 
 sleep 5
 # Reiniciar la sesión de usuario
