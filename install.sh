@@ -423,6 +423,57 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 echo "Root ahora usará la configuración .zshrc del usuario no privilegiado."
+sleep 5
+# Crear una carpeta llamada bin en $user_home/.config/
+echo "Creando la carpeta bin en $user_home/.config/..."
+sudo -u $SUDO_USER mkdir -p "$user_home/.config/bin"
+
+# Copiar todo lo que está en $user_home/KaliEntorno/bin a $user_home/.config/bin
+echo "Copiando scripts al directorio bin de $user_home/.config/..."
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/bin/"* "$user_home/.config/bin/"
+
+# Dar permiso de ejecución a los scripts específicos en $user_home/.config/bin/
+echo "Asignando permisos de ejecución a los scripts..."
+sudo -u $SUDO_USER chmod +x "$user_home/.config/bin/ethernet_status.sh"
+sudo -u $SUDO_USER chmod +x "$user_home/.config/bin/hackthebox_status.sh"
+sudo -u $SUDO_USER chmod +x "$user_home/.config/bin/target_to_hack.sh"
+
+echo "Scripts copiados y permisos asignados correctamente."
+
+sleep 5
+
+# Crear la carpeta zsh-sudo-plugin en /usr/share
+echo "Creando carpeta zsh-sudo-plugin en /usr/share..."
+mkdir -p /usr/share/zsh-sudo-plugin
+
+# Cambiar la propiedad de la carpeta al usuario no privilegiado y su grupo
+chown $SUDO_USER:$SUDO_USER /usr/share/zsh-sudo-plugin
+if [ $? -ne 0 ]; then
+    echo "Error al cambiar la propiedad de la carpeta zsh-sudo-plugin. Abortando."
+    exit 1
+fi
+echo "Carpeta zsh-sudo-plugin creada y propiedad asignada al usuario no privilegiado."
+
+sleep 5
+
+# Suponiendo que $user_home es la ruta del directorio home del usuario no privilegiado
+
+# Copiar el archivo sudo.plugin.zsh a /usr/share/zsh-sudo-plugin con los permisos adecuados
+echo "Copiando el archivo sudo.plugin.zsh a /usr/share/zsh-sudo-plugin..."
+cp "$user_home/KaliEntorno/sudoPlugin/sudo.plugin.zsh" /usr/share/zsh-sudo-plugin/
+if [ $? -ne 0 ]; then
+    echo "Error al copiar el archivo sudo.plugin.zsh. Abortando."
+    exit 1
+fi
+
+# Cambiar los permisos del archivo sudo.plugin.zsh a rwxr-xr-x (755)
+chmod 755 /usr/share/zsh-sudo-plugin/sudo.plugin.zsh
+if [ $? -ne 0 ]; then
+    echo "Error al establecer permisos para sudo.plugin.zsh. Abortando."
+    exit 1
+fi
+
+echo "El archivo sudo.plugin.zsh ha sido copiado y configurado con los permisos adecuados."
 
 
 sleep 5
