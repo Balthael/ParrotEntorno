@@ -486,51 +486,6 @@ if [ $? -ne 0 ]; then
 fi
 echo "npm instalado correctamente."
 
-# Crear el directorio nvim en la ruta de configuración del usuario no privilegiado
-echo "Creando directorio nvim en la ruta de configuración del usuario no privilegiado..."
-sudo -u $SUDO_USER mkdir -p "$user_home/.config/nvim"
-if [ $? -ne 0 ]; then
-    echo "Error al crear el directorio nvim. Abortando."
-    exit 1
-fi
-echo "Directorio nvim creado correctamente."
-
-# Cambiar al usuario no privilegiado y clonar el repositorio NvChad
-echo "Clonando el repositorio NvChad en la configuración de nvim del usuario no privilegiado..."
-sudo -u $SUDO_USER git clone https://github.com/NvChad/NvChad "$user_home/.config/nvim" --depth 1
-if [ $? -ne 0 ]; then
-    echo "Error al clonar el repositorio NvChad. Abortando."
-    exit 1
-fi
-echo "Repositorio NvChad clonado correctamente."
-
-# Crear la carpeta nvim en /opt como root
-echo "Creando carpeta nvim en /opt..."
-mkdir -p /opt/nvim
-if [ $? -ne 0 ]; then
-    echo "Error al crear la carpeta /opt/nvim. Abortando."
-    exit 1
-fi
-echo "Carpeta /opt/nvim creada correctamente."
-
-# Copiar la carpeta nvim-linux64 a /opt/nvim como root
-echo "Copiando nvim-linux64 a /opt/nvim..."
-cp -r "$user_home/KaliEntorno/neovim/nvim-linux64" /opt/nvim/
-if [ $? -ne 0 ]; then
-    echo "Error al copiar nvim-linux64 a /opt/nvim. Abortando."
-    exit 1
-fi
-echo "nvim-linux64 copiado correctamente a /opt/nvim."
-
-# Clonar el repositorio NvChad como root en la configuración nvim del usuario no privilegiado
-echo "Clonando el repositorio NvChad en la configuración de nvim del usuario no privilegiado..."
-sudo -H -u $SUDO_USER bash -c 'git clone https://github.com/NvChad/NvChad "$HOME/.config/nvim" --depth 1'
-if [ $? -ne 0 ]; then
-    echo "Error al clonar el repositorio NvChad. Abortando."
-    exit 1
-fi
-echo "Repositorio NvChad clonado correctamente en la configuración nvim del usuario no privilegiado."
-
 sleep 5
 
 # Instalar Flameshot para capturas de pantalla
