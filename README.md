@@ -1,9 +1,7 @@
-Aquí tienes el código de un `README.md` para el entorno de S4vitar en Kali Linux, preparado para incluirlo directamente en un repositorio de GitHub:
 
-```markdown
 # Entorno de S4vitar en Kali Linux 100% Funcional
 
-![Entorno S4vitar](Pasted_image_20240418211851.png)
+![Entorno S4vitar](images/01.png)
 
 Bienvenidos a la guía de personalización del entorno de S4vitar en Kali Linux. Aquí encontrarás todos los pasos necesarios para una instalación completa y funcional.
 
@@ -24,11 +22,13 @@ sudo ./install.sh
 
 Después de la instalación, asegúrate de seleccionar BSPWM e instalar `fzf` y `nvim`, ya que no están incluidos en el script inicial.
 
+ ![bspwm](images/02.png)
+
 ### Problemas comunes
 
 Si encuentras un error al cambiar al usuario root, sigue estos pasos para corregirlo:
 
-![Error root](Pasted_image_20240418212022.png)
+![Error root](images/03.png)
 
 Solución:
 
@@ -39,7 +39,7 @@ chown root:root /usr/local/share/zsh/site-functions/_bspc
 exit
 ```
 
-![Solución error](Pasted_image_20240418212214.png)
+![Solución error](images/04.png)
 
 ### Instalación de fzf
 
