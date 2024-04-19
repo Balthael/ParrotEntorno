@@ -88,4 +88,3 @@ nvim
 Si tienes preguntas o necesitas ayuda, no dudes en escribirme a mi [LinkedIn](https://www.linkedin.com/in/johnosoriob/).
 ```
 
-Este archivo `README.md` incluye todos los componentes esenciales como enlaces, imágenes y comandos de shell para una guía clara y efectiva. Solo necesitas reemplazar los enlaces de imágenes y los URLs por los correspondientes a tus recursos.
