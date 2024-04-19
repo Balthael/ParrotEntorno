@@ -7,7 +7,7 @@ Bienvenidos a la guía de personalización del entorno de S4vitar en Kali Linux.
 
 ## Video Tutorial
 
-Puedes seguir el video tutorial paso a paso en mi [canal de YouTube](https://youtube.com). Si el contenido es de tu agrado, considera suscribirte y seguirme en [LinkedIn](https://www.linkedin.com/in/johnosoriob/).
+Puedes seguir el video tutorial paso a paso en mi [canal de YouTube](https://youtu.be/YUgXB2IZtcQ). Si el contenido es de tu agrado, considera suscribirte y seguirme en [LinkedIn](https://www.linkedin.com/in/johnosoriob/).
 
 ## Instalación
 
@@ -86,5 +86,5 @@ nvim
 ## Contacto
 
 Si tienes preguntas o necesitas ayuda, no dudes en escribirme a mi [LinkedIn](https://www.linkedin.com/in/johnosoriob/).
-```
+
 
