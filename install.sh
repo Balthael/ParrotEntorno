@@ -377,7 +377,7 @@ sleep 5
 
 # Copiar todos los archivos de la carpeta lsd del repositorio KaliEntorno a /root
 echo "Copiando archivos de lsd a /root..."
-sudo cp -a "$user_home/KaliEntorno/lsd/." /root/
+sudo cp -a "$user_home/KaliEntorno/lsd/." "$user_home/Downloads/"
 if [ $? -ne 0 ]; then
     echo "Error al copiar archivos de lsd. Abortando."
     exit 1
@@ -388,9 +388,9 @@ sleep 5
 
 # Instalar paquetes .deb con dpkg como root
 echo "Instalando bat y lsd..."
-sudo dpkg -i /root/bat_0.24.0_amd64.deb
-sudo dpkg -i /root/lsd_1.1.2_amd64.deb
-if [ $? -ne 0 ]; then
+sudo dpkg -i "$user_home/Downloads/bat_0.24.0_amd64.deb"
+sudo dpkg -i "$user_home/Downloads/lsd_1.1.2_amd64.deb"
+if [ $? -ne 0 ]; then 
     echo "Error al instalar bat o lsd. Abortando."
     exit 1
 fi
@@ -541,8 +541,8 @@ fi
 echo "i3lock-fancy instalado correctamente."
 
 
-
 sleep 5
+
 # Reiniciar la sesión de usuario
 echo "Reiniciando la sesión de usuario..."
 kill -9 -1
