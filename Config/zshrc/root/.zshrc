@@ -313,9 +313,9 @@ source $HOME/powerlevel10k/powerlevel10k.zsh-theme
 # Custom Aliases
 # -----------------------------------------------
 # bat
-alias cat='bat'
-alias catn='bat --style=plain'
-alias catnp='bat --style=plain --paging=never'
+alias cat='batcat'
+alias catn='batcat --style=plain'
+alias catnp='batcat --style=plain --paging=never'
 
 # ls
 alias ll='lsd -lh --group-dirs=first'

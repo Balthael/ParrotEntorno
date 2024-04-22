@@ -540,6 +540,16 @@ fi
 
 echo "i3lock-fancy instalado correctamente."
 
+sleep 5
+
+# Actualizando el sistema
+echo "Actualizando el sistema..."
+sudo apt update && apt upgrade -y
+if [ $? -ne 0 ]; then
+    echo "Error durante la actualización del sistema. Abortando."
+    exit 1
+fi
+
 
 sleep 5
 
