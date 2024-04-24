@@ -1,5 +1,5 @@
 
-# Entorno de S4vitar en Kali Linux 100% Funcional
+# Entorno de S4vitar en Parrot Linux 100% Funcional
 
 ![Entorno S4vitar](images/01.png)
 
@@ -14,8 +14,8 @@ Puedes seguir el video tutorial paso a paso en mi [canal de YouTube](https://you
 Clona el repositorio y prepara la instalación con los siguientes comandos:
 
 ```bash
-git clone https://github.com/Balthael/KaliEntorno
-cd KaliEntorno
+git clone https://github.com/Balthael/ParrotEntorno
+cd ParrotEntorno
 chmod +x install.sh
 sudo ./install.sh
 ```
@@ -70,7 +70,7 @@ cd
 git clone https://github.com/NvChad/starter ~/.config/nvim
 mkdir /opt/nvim
 cd /opt/nvim
-mv /home/balthael/KaliEntorno/neovim/nvim-linux64 .
+mv /home/su_usuario/ParrotEntorno/neovim/nvim-linux64 .
 cd /opt/nvim/nvim-linux64/bin
 ./nvim
 ```
