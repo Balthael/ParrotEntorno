@@ -87,4 +87,5 @@ nvim
 
 Si tienes preguntas o necesitas ayuda, no dudes en escribirme a mi [LinkedIn](https://www.linkedin.com/in/johnosoriob/).
 
+Gracias
 
