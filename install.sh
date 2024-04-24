@@ -6,14 +6,6 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# Actualizando el sistema
-echo "Actualizando el sistema..."
-sudo apt update && apt parrot-upgrade -y
-if [ $? -ne 0 ]; then
-    echo "Error durante la actualización del sistema. Abortando."
-    exit 1
-fi
-
 sleep 5
 # Intentar instalar dependencias
 echo "Instalando depetendencias..."
@@ -102,7 +94,7 @@ sudo apt install cmake cmake-data pkg-config python3-sphinx libcairo2-dev libxcb
 sleep 5
 # Descargar e instalar Polybar como usuario no privilegiado
 echo "Instalando Polybar..."
-cd "$user_home/Downloads"
+cd "$user_home/Descargas"
 sudo -u $SUDO_USER git clone --recursive https://github.com/polybar/polybar
 cd polybar
 sudo -u $SUDO_USER mkdir build
@@ -129,7 +121,7 @@ fi
 sleep 5
 # Descargar e instalar Picom como usuario no privilegiado
 echo "Instalando Picom..."
-cd "$user_home/Downloads"
+cd "$user_home/Descargas"
 sudo -u $SUDO_USER git clone https://github.com/ibhagwan/picom.git
 cd picom
 sudo -u $SUDO_USER git submodule update --init --recursive
@@ -141,7 +133,7 @@ fi
 
 sleep 5
 # Compilar Picom con ninja
-cd "$user_home/Downloads/picom"
+cd "$user_home/Descargas/picom"
 sudo -u $SUDO_USER ninja -C build
 if [ $? -ne 0 ]; then
     echo "Error al compilar Picom con ninja. Abortando."
@@ -149,7 +141,7 @@ if [ $? -ne 0 ]; then
 fi
 sleep 5
 # Instalar Picom
-cd "$user_home/Downloads/picom"
+cd "$user_home/Descargas/picom"
 sudo ninja -C build install
 if [ $? -ne 0 ]; then
     echo "Error al instalar Picom. Abortando."
@@ -252,15 +244,15 @@ echo "Scrub instalado correctamente."
 
 sleep 5
 
-# Clonar el recurso blue-sky en el directorio Downloads del usuario no privilegiado
-echo "Clonando el repositorio blue-sky en el directorio Downloads..."
-sudo -u $SUDO_USER git -C "$user_home/Downloads" clone https://github.com/VaughnValle/blue-sky
+# Clonar el recurso blue-sky en el directorio Descargas del usuario no privilegiado
+echo "Clonando el repositorio blue-sky en el directorio Descargas..."
+sudo -u $SUDO_USER git -C "$user_home/Descargas" clone https://github.com/VaughnValle/blue-sky
 if [ $? -ne 0 ]; then
     echo "Error al clonar el repositorio blue-sky. Abortando."
     exit 1
 fi
 
-echo "Repositorio blue-sky clonado con éxito en la carpeta Downloads."
+echo "Repositorio blue-sky clonado con éxito en la carpeta Descargas."
 
 sleep 5
 
@@ -354,7 +346,7 @@ sleep 5
 
 # Copiar el archivo .zshrc del repositorio al directorio home del usuario no privilegiado
 echo "Copiando el archivo .zshrc desde el repositorio al directorio home del usuario..."
-sudo -u $SUDO_USER cp "$user_home/ParrotEntorno/Config/zshrc/user/.zshrc" "$user_home/"
+sudo cp "$user_home/ParrotEntorno/Config/zshrc/user/.zshrc" "$user_home/"
 if [ $? -ne 0 ]; then
     echo "Error al copiar el archivo .zshrc. Abortando."
     exit 1
@@ -377,7 +369,7 @@ sleep 5
 
 # Copiar todos los archivos de la carpeta lsd del repositorio ParrotEntorno a /root
 echo "Copiando archivos de lsd a /root..."
-sudo cp -a "$user_home/ParrotEntorno/lsd/." "$user_home/Downloads/"
+sudo cp -a "$user_home/ParrotEntorno/lsd/." "$user_home/Descargas/"
 if [ $? -ne 0 ]; then
     echo "Error al copiar archivos de lsd. Abortando."
     exit 1
@@ -388,8 +380,8 @@ sleep 5
 
 # Instalar paquetes .deb con dpkg como root
 echo "Instalando bat y lsd..."
-sudo dpkg -i "$user_home/Downloads/bat_0.24.0_amd64.deb"
-sudo dpkg -i "$user_home/Downloads/lsd_1.1.2_amd64.deb"
+sudo dpkg -i "$user_home/Descargas/bat_0.24.0_amd64.deb"
+sudo dpkg -i "$user_home/Descargas/lsd_1.1.2_amd64.deb"
 if [ $? -ne 0 ]; then 
     echo "Error al instalar bat o lsd. Abortando."
     exit 1
@@ -510,20 +502,20 @@ echo "i3lock instalado correctamente."
 sleep 5
 
 
-# Cambiar al directorio Downloads del usuario no privilegiado
-cd "$user_home/Downloads"
+# Cambiar al directorio Descargas del usuario no privilegiado
+cd "$user_home/Descargas"
 
 # Clonar i3lock-fancy y compilarlo como usuario no privilegiado
-echo "Clonando i3lock-fancy desde GitHub en el directorio Downloads..."
+echo "Clonando i3lock-fancy desde GitHub en el directorio Descargas..."
 sudo -u $SUDO_USER git clone https://github.com/meskarune/i3lock-fancy.git
 
 # Verificar si el repositorio se clonó correctamente
 if [ $? -ne 0 ]; then
-    echo "Error al clonar el repositorio i3lock-fancy en Downloads. Abortando."
+    echo "Error al clonar el repositorio i3lock-fancy en Descargas. Abortando."
     exit 1
 fi
 
-echo "Repositorio i3lock-fancy clonado correctamente en Downloads."
+echo "Repositorio i3lock-fancy clonado correctamente en Descargas."
 
 # Cambiar al directorio i3lock-fancy
 cd i3lock-fancy
@@ -542,14 +534,7 @@ echo "i3lock-fancy instalado correctamente."
 
 sleep 5
 
-# Actualizando el sistema
-echo "Actualizando el sistema..."
-sudo apt update && apt parrot-upgrade -y
-if [ $? -ne 0 ]; then
-    echo "Error durante la actualización del sistema. Abortando."
-    exit 1
-fi
-sleep 5
+sudo chsh -s $(which zsh) root
 
 # Reiniciar la sesión de usuario
 echo "Reiniciando la sesión de usuario..."
