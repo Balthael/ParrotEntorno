@@ -8,7 +8,7 @@ fi
 
 # Actualizando el sistema
 echo "Actualizando el sistema..."
-sudo apt update && apt parrot-upgrade -y
+sudo apt update && apt upgrade -y
 if [ $? -ne 0 ]; then
     echo "Error durante la actualización del sistema. Abortando."
     exit 1
@@ -18,7 +18,7 @@ sleep 5
 # Intentar instalar dependencias
 echo "Instalando depetendencias..."
 sleep 2
-deps=("build-essential" "git" "vim" "xcb" "libxcb-util0-dev" "libxcb-ewmh-dev" "libxcb-randr0-dev" "libxcb-icccm4-dev" "libxcb-keysyms1-dev" "libxcb-xinerama0-dev" "libasound2-dev" "libxcb-xtest0-dev" "libxcb-shape0-dev")
+deps=("build-essential" "git" "vim" "libxcb-util0-dev" "libxcb-ewmh-dev" "libxcb-randr0-dev" "libxcb-icccm4-dev" "libxcb-keysyms1-dev" "libxcb-xinerama0-dev" "libasound2-dev" "libxcb-xtest0-dev" "libxcb-shape0-dev")
 for dep in "${deps[@]}"; do
     if ! sudo apt install -y "$dep"; then
         echo "Advertencia: No se pudo instalar el paquete $dep. Intentando continuar..."
@@ -79,17 +79,17 @@ fi
 sleep 5
 # Crear directorios de configuración
 sudo -u $SUDO_USER mkdir -p "$user_home/.config/bspwm" "$user_home/.config/sxhkd" "$user_home/.config/bspwm/scripts" "$user_home/fondos"
-sudo -u $SUDO_USER cp "$user_home/ParrotEntorno/fondos/fondo1.jpg" "$user_home/fondos/fondo1.jpg"
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/fondos/fondo1.jpg" "$user_home/fondos/fondo1.jpg"
 
 sleep 5
 # Copiar los archivos de configuración a las carpetas de configuración 
-# Asegúrese de que estos pasos se ejecuten después de que el repositorio ParrotEntorno se haya clonado manualmente 
-sudo -u $SUDO_USER cp "$user_home/ParrotEntorno/Config/bspwm/bspwmrc" "$user_home/.config/bspwm/" 
-sudo -u $SUDO_USER cp "$user_home/ParrotEntorno/Config/sxhkd/sxhkdrc" "$user_home/.config/sxhkd/" 
+# Asegúrese de que estos pasos se ejecuten después de que el repositorio KaliEntorno se haya clonado manualmente 
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/Config/bspwm/bspwmrc" "$user_home/.config/bspwm/" 
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/Config/sxhkd/sxhkdrc" "$user_home/.config/sxhkd/" 
 
 sleep 5
 # Copiar el script bspwm_resize al directorio de scripts 
-sudo -u $SUDO_USER cp "$user_home/ParrotEntorno/Config/bspwm/scripts/bspwm_resize" "$user_home/.config/bspwm/scripts/" 
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/Config/bspwm/scripts/bspwm_resize" "$user_home/.config/bspwm/scripts/" 
 # Hacer ejecutable el script bspwmrc y bspwm_resize 
 chmod +x "$user_home/.config/bspwm/bspwmrc" 
 chmod +x "$user_home/.config/bspwm/scripts/bspwm_resize"
@@ -175,16 +175,16 @@ if [ $? -ne 0 ]; then
 fi
 sleep 5
 
-# Copiar todos los archivos de fuentes de ParrotEntorno a /usr/local/share/fonts 
+# Copiar todos los archivos de fuentes de KaliEntorno a /usr/local/share/fonts 
 echo "Copiando fuentes personalizadas..." 
-sudo cp "$user_home/ParrotEntorno/fonts/"* /usr/local/share/fonts/
+sudo cp "$user_home/KaliEntorno/fonts/"* /usr/local/share/fonts/
 
 sleep 5
 
 echo "Copiando la configuración de Kitty..." 
 mkdir -p "$user_home/.config/kitty" 
 # Asegúrate de que el directorio exista 
-cp -r "$user_home/ParrotEntorno/Config/kitty/." "$user_home/.config/kitty/"
+cp -r "$user_home/KaliEntorno/Config/kitty/." "$user_home/.config/kitty/"
 
 sleep 5
 
@@ -274,13 +274,13 @@ sleep 5
 
 # Copiar los archivos de configuración de Polybar
 echo "Copiando archivos de configuración de Polybar..."
-sudo -u $SUDO_USER cp -a $user_home/ParrotEntorno/Config/polybar/. "$user_home/.config/polybar/"
+sudo -u $SUDO_USER cp -a $user_home/KaliEntorno/Config/polybar/. "$user_home/.config/polybar/"
 
 echo "Archivos de configuración de Polybar copiados."
 sleep 5
 
 echo "Copiando fuentes de Polybar al directorio del sistema..."
-sudo cp -r "$user_home/ParrotEntorno/Config/polybar/fonts/"* /usr/share/fonts/truetype/
+sudo cp -r "$user_home/KaliEntorno/Config/polybar/fonts/"* /usr/share/fonts/truetype/
 
 
 
@@ -305,7 +305,7 @@ sleep 5
 
 # Copiar el archivo de configuración de picom al directorio de configuración de picom del usuario no privilegiado
 echo "Copiando archivo de configuración picom.conf a la carpeta de configuración de picom..."
-sudo -u $SUDO_USER cp "$user_home/ParrotEntorno/Config/picom/picom.conf" "$user_home/.config/picom/picom.conf"
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/Config/picom/picom.conf" "$user_home/.config/picom/picom.conf"
 if [ $? -ne 0 ]; then
     echo "Error al copiar el archivo picom.conf. Abortando."
     exit 1
@@ -354,7 +354,7 @@ sleep 5
 
 # Copiar el archivo .zshrc del repositorio al directorio home del usuario no privilegiado
 echo "Copiando el archivo .zshrc desde el repositorio al directorio home del usuario..."
-sudo -u $SUDO_USER cp "$user_home/ParrotEntorno/Config/zshrc/user/.zshrc" "$user_home/"
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/Config/zshrc/user/.zshrc" "$user_home/"
 if [ $? -ne 0 ]; then
     echo "Error al copiar el archivo .zshrc. Abortando."
     exit 1
@@ -368,16 +368,16 @@ echo "Permisos del archivo .zshrc ajustados correctamente."
 
 # Copiar el archivo .zshrc de root desde el repositorio a /root
 echo "Copiando el archivo .zshrc de root..."
-cp "$user_home/ParrotEntorno/Config/zshrc/root/.zshrc" /root/.zshrc
+cp "$user_home/KaliEntorno/Config/zshrc/root/.zshrc" /root/.zshrc
 chown root:root /root/.zshrc
 chmod 644 /root/.zshrc
 echo "El archivo .zshrc de root ha sido copiado con los permisos adecuados."
 
 sleep 5
 
-# Copiar todos los archivos de la carpeta lsd del repositorio ParrotEntorno a /root
+# Copiar todos los archivos de la carpeta lsd del repositorio KaliEntorno a /root
 echo "Copiando archivos de lsd a /root..."
-sudo cp -a "$user_home/ParrotEntorno/lsd/." "$user_home/Downloads/"
+sudo cp -a "$user_home/KaliEntorno/lsd/." "$user_home/Downloads/"
 if [ $? -ne 0 ]; then
     echo "Error al copiar archivos de lsd. Abortando."
     exit 1
@@ -397,9 +397,9 @@ fi
 echo "bat y lsd instalados correctamente."
 
 sleep 5
-# Reemplazar el archivo .p10k.zsh con la versión personalizada del repositorio ParrotEntorno
+# Reemplazar el archivo .p10k.zsh con la versión personalizada del repositorio KaliEntorno
 echo "Actualizando archivo .p10k.zsh para el usuario no privilegiado..."
-sudo -u $SUDO_USER cp "$user_home/ParrotEntorno/Config/Power10kNormal/.p10k.zsh" "$user_home/.p10k.zsh"
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/Config/Power10kNormal/.p10k.zsh" "$user_home/.p10k.zsh"
 if [ $? -ne 0 ]; then
     echo "Error al actualizar .p10k.zsh. Abortando."
     exit 1
@@ -409,7 +409,7 @@ echo "Archivo .p10k.zsh actualizado correctamente."
 
 # Reemplazar el archivo .p10k.zsh con la versión personalizada para root
 echo "Actualizando archivo .p10k.zsh para el usuario root..."
-cp "$user_home/ParrotEntorno/Config/Power10kRoot/.p10k.zsh" /root/.p10k.zsh
+cp "$user_home/KaliEntorno/Config/Power10kRoot/.p10k.zsh" /root/.p10k.zsh
 if [ $? -ne 0 ]; then
     echo "Error al actualizar .p10k.zsh para root. Abortando."
     exit 1
@@ -428,9 +428,9 @@ sleep 5
 echo "Creando la carpeta bin en $user_home/.config/..."
 sudo -u $SUDO_USER mkdir -p "$user_home/.config/bin"
 
-# Copiar todo lo que está en $user_home/ParrotEntorno/bin a $user_home/.config/bin
+# Copiar todo lo que está en $user_home/KaliEntorno/bin a $user_home/.config/bin
 echo "Copiando scripts al directorio bin de $user_home/.config/..."
-sudo -u $SUDO_USER cp "$user_home/ParrotEntorno/bin/"* "$user_home/.config/bin/"
+sudo -u $SUDO_USER cp "$user_home/KaliEntorno/bin/"* "$user_home/.config/bin/"
 
 # Dar permiso de ejecución a los scripts específicos en $user_home/.config/bin/
 echo "Asignando permisos de ejecución a los scripts..."
@@ -460,7 +460,7 @@ sleep 5
 
 # Copiar el archivo sudo.plugin.zsh a /usr/share/zsh-sudo-plugin con los permisos adecuados
 echo "Copiando el archivo sudo.plugin.zsh a /usr/share/zsh-sudo-plugin..."
-cp "$user_home/ParrotEntorno/sudoPlugin/sudo.plugin.zsh" /usr/share/zsh-sudo-plugin/
+cp "$user_home/KaliEntorno/sudoPlugin/sudo.plugin.zsh" /usr/share/zsh-sudo-plugin/
 if [ $? -ne 0 ]; then
     echo "Error al copiar el archivo sudo.plugin.zsh. Abortando."
     exit 1
