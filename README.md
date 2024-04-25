@@ -94,7 +94,14 @@ Cada linea de comando por separado.
 - `nvim` ---> Ejecutamos nvim 
 
 ```
- Para quitar el $ de nvim ver el video.
+ Para quitar el $ de nvim ver el video y agregar estas dos lineas en options.lua
+
+```bash
+local o = vim.o
+o.list =false
+```
+
+
 ## Contacto
 
 Si tienes preguntas o necesitas ayuda, no dudes en escribirme a mi [LinkedIn](https://www.linkedin.com/in/johnosoriob/).
