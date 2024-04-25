@@ -49,6 +49,9 @@ Instalación para usuarios root y no privilegiados:
 
 ```bash
 sudo su
+```
+
+```bash
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
@@ -63,10 +66,11 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ### Instalación de Neovim
 
 #### Para Root:
+Cada linea de comando por separado.
 
 ```bash
-sudo su
-cd
+sudo su ---> Para convertirnos en root
+cd ---> Ir a la raiz de root
 git clone https://github.com/NvChad/starter ~/.config/nvim
 mkdir /opt/nvim
 cd /opt/nvim
@@ -78,9 +82,10 @@ cd /opt/nvim/nvim-linux64/bin
 #### Para Usuario No Privilegiado:
 
 ```bash
-cd
+cd --->Para ir a la carpeta /home del usuario
 git clone https://github.com/NvChad/starter ~/.config/nvim
-nvim
+cd /opt/nvim/nvim-linux64/bin/ 
+./nvim
 ```
 
 ## Contacto
