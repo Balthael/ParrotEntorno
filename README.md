@@ -65,29 +65,36 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 
 ### Instalación de Neovim
 
-#### Para Root:
+#### Para Usuario No Privilegiado:
 Cada linea de comando por separado.
 
 ```bash
-sudo su ---> Para convertirnos en root
-cd ---> Ir a la raiz de root
-git clone https://github.com/NvChad/starter ~/.config/nvim
-mkdir /opt/nvim
-cd /opt/nvim
-mv /home/su_usuario/ParrotEntorno/neovim/nvim-linux64 .
-cd /opt/nvim/nvim-linux64/bin
-./nvim
+- Nos clonamos el NvChad como usuario no privilegiado `git clone https://github.com/NvChad/starter ~/.config/nvim`
+- `sudo su` --->Nos convertimos en root 
+- `cd` --->Para ir a la raíz
+- `mkdir /opt/nvim`
+- `cd /opt/nvim`
+- `mv /home/balthael/ParrotEntorno/neovim/nvim-linux64 .` Movemos la carpeta nvim-linux64 que esta en el repositorio del entorno que clonamos  a la ruta creada.
+- Nos cambiamos a usuario no privilegiado
+- `cd /opt/nvim/nvim-linux64/bin `
+- `./nvim` 
+- `sudo apt remove neovim`  
+- `nvim`
+
 ```
 
-#### Para Usuario No Privilegiado:
+#### Para Usuario Root:
 
 ```bash
-cd --->Para ir a la carpeta /home del usuario
-git clone https://github.com/NvChad/starter ~/.config/nvim
-cd /opt/nvim/nvim-linux64/bin/ 
-./nvim
-```
 
+- `sudo su` ---> Para volvernos root
+- `cd /root/.config/` ---> Ir a la carpeta raíz de root
+- `cp -r /home/balthael/.config/nvim .` ---> Copiamos de forma recursiva la carpeta nvim 
+- `cd /root/.config/nvim` ---> vamos a la ruta nvim 
+- `nvim` ---> Ejecutamos nvim 
+
+```
+ Para quitar el $ de nvim ver el video.
 ## Contacto
 
 Si tienes preguntas o necesitas ayuda, no dudes en escribirme a mi [LinkedIn](https://www.linkedin.com/in/johnosoriob/).
