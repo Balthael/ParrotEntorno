@@ -6,10 +6,14 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+echo "Realizando actualización del sistema"
 sleep 5
+sudo apt update 
+sudo parrot-upgrade
+
 # Intentar instalar dependencias
 echo "Instalando depetendencias..."
-sleep 2
+sleep 5
 deps=("build-essential" "git" "vim" "xcb" "libxcb-util0-dev" "libxcb-ewmh-dev" "libxcb-randr0-dev" "libxcb-icccm4-dev" "libxcb-keysyms1-dev" "libxcb-xinerama0-dev" "libasound2-dev" "libxcb-xtest0-dev" "libxcb-shape0-dev")
 for dep in "${deps[@]}"; do
     if ! sudo apt install -y "$dep"; then
