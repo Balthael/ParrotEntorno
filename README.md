@@ -1,9 +1,9 @@
 
-# Entorno de S4vitar en Parrot Linux 100% Funcional
+# Entorno de S4vitar en Parrot 100% Funcional
 
 ![Entorno S4vitar](images/01.png)
 
-Bienvenidos a la guía de personalización del entorno de S4vitar en Kali Linux. Aquí encontrarás todos los pasos necesarios para una instalación completa y funcional.
+Bienvenidos a la guía de personalización del entorno de S4vitar en Parrot. Aquí encontrarás todos los pasos necesarios para una instalación completa y funcional.
 
 ## Video Tutorial
 
