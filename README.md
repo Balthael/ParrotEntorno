@@ -102,10 +102,18 @@ Cada linea de comando por separado.
  Para quitar el $ de nvim ver el video y agregar estas dos lineas en options.lua
 
 ```bash
+Como root vamos a la ruta /root/.config/nvim/lua
+y agregamos estas dons lineas en el archivo:
+local o = vim.o
+o.list =false
+
+De igual manera para el usuario no privilegiado: 
+
+Como usuario no privilegiado vamos /home/<su_usuario>/.config/nvim/lua
+y agregamos estas dons lineas en el archivo:
 local o = vim.o
 o.list =false
 ```
-
 
 ## Contacto
 
