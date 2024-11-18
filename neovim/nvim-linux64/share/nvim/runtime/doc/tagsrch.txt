@@ -400,19 +400,24 @@ the pattern.
 							*tag-!*
 If the tag is in the current file this will always work.  Otherwise the
 performed actions depend on whether the current file was changed, whether a !
-is added to the command and on the 'autowrite' option:
+is added to the command and on the 'autowrite' and 'winfixbuf' options:
 
-  tag in       file	   autowrite			~
-current file  changed	!   option	  action	~
- ---------------------------------------------------------------------------
-    yes		 x	x     x	  goto tag
-    no		 no	x     x	  read other file, goto tag
-    no		yes    yes    x   abandon current file, read other file, goto
-				  tag
-    no		yes	no    on  write current file, read other file, goto
-				  tag
-    no		yes	no   off  fail
- ---------------------------------------------------------------------------
+  tag in       file	    winfixbuf	autowrite		~
+current file  changed	!   option	option	      action	~
+ -----------------------------------------------------------------------------
+    yes		x	x      off	  x	    goto tag
+    no		no	x      off	  x	    read other file, goto tag
+    no		yes	yes    off	  x	    abandon current file,
+						    read other file, goto tag
+    no		yes	no     off	  on	    write current file,
+						    read other file, goto tag
+    no		yes	no     off	  off	    fail
+    yes		x	yes    x	  x	    goto tag
+    no		no	no     on	  x	    fail
+    no		yes	no     on	  x	    fail
+    no		yes	no     on	  on	    fail
+    no		yes	no     on	  off	    fail
+ -----------------------------------------------------------------------------
 
 - If the tag is in the current file, the command will always work.
 - If the tag is in another file and the current file was not changed, the
@@ -428,6 +433,8 @@ current file  changed	!   option	  action	~
   the changes, use the ":w" command and then use ":tag" without an argument.
   This works because the tag is put on the stack anyway.  If you want to lose
   the changes you can use the ":tag!" command.
+- If the tag is in another file and the window includes 'winfixbuf', the
+  command will fail. If the tag is in the same file then it may succeed.
 
 							*tag-security*
 Note that Vim forbids some commands, for security reasons.  This works like
@@ -695,7 +702,7 @@ do not have an absolute path.
 The 'comments' option is used for the commands that display a single line or
 jump to a line.  It defines patterns that may start a comment.  Those lines
 are ignored for the search, unless [!] is used.  One exception: When the line
-matches the pattern "^# *define" it is not considered to be a comment.
+matches the pattern `"^# *define"` it is not considered to be a comment.
 
 If you want to list matches, and then select one to jump to, you could use a
 mapping to do that for you.  Here is an example: >
@@ -773,8 +780,16 @@ CTRL-W i		Open a new window, with the cursor on the first line
 			beginning of the file.  If a count is given, the
 			count'th matching line is displayed.
 
+							*[d-default*
+			Mapped to |vim.diagnostic.goto_prev()| by default.
+			|default-mappings|
+
 							*]d*
 ]d			like "[d", but start at the current cursor position.
+
+							*]d-default*
+			Mapped to |vim.diagnostic.goto_next()| by default.
+			|default-mappings|
 
 							*:ds* *:dsearch*
 :[range]ds[earch][!] [count] [/]string[/]
@@ -822,6 +837,10 @@ CTRL-W d		Open a new window, with the cursor on the first
 			beginning of the file.  If a count is given, the
 			count'th matching line is jumped to.
 
+						*CTRL-W_d-default*
+			Mapped to |vim.diagnostic.open_float()| by default.
+			|default-mappings|
+
 							*:dsp* *:dsplit*
 :[range]dsp[lit][!] [count] [/]string[/]
 			Like "CTRL-W d", but search in [range] lines
@@ -838,7 +857,7 @@ Common arguments for the commands above:
 [!]	When included, find matches in lines that are recognized as comments.
 	When excluded, a match is ignored when the line is recognized as a
 	comment (according to 'comments'), or the match is in a C comment
-	(after "//" or inside /* */).  Note that a match may be missed if a
+	(after "//" or inside `/* */`).  Note that a match may be missed if a
 	line is recognized as a comment, but the comment ends halfway the line.
 	And if the line is a comment, but it is not recognized (according to
 	'comments') a match may be found in it anyway.  Example: >
@@ -907,7 +926,7 @@ The following fields are optional:
 If the function returns |v:null| instead of a List, a standard tag lookup will
 be performed instead.
 
-It is not allowed to change the tagstack from inside 'tagfunc'.  *E986* 
+It is not allowed to change the tagstack from inside 'tagfunc'.  *E986*
 It is not allowed to close a window or change window from inside 'tagfunc'.
 *E1299*
 

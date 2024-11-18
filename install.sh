@@ -6,6 +6,14 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Comentar la primera línea de /etc/apt/sources.list
+echo "Comentando la primera línea de /etc/apt/sources.list..."
+sudo sed -i '1s/^/#/' /etc/apt/sources.list
+
+# Verificar el cambio
+echo "Se ha comentado la primera línea del archivo /etc/apt/sources.list:"
+head -n 1 /etc/apt/sources.list
+
 echo "Realizando actualización del sistema"
 sleep 5
 sudo apt update 

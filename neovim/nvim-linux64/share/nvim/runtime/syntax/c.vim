@@ -1,7 +1,8 @@
 " Vim syntax file
 " Language:	C
-" Maintainer:	Bram Moolenaar <Bram@vim.org>
-" Last Change:	2022 Oct 05
+" Maintainer:	The Vim Project <https://github.com/vim/vim>
+" Last Change:	2023 Aug 10
+" Former Maintainer:	Bram Moolenaar <Bram@vim.org>
 
 " Quit when a (custom) syntax file was already loaded
 if exists("b:current_syntax")
@@ -251,7 +252,7 @@ if exists("c_gnu")
   syn keyword	cOperator	typeof __typeof__
   syn keyword	cOperator	__real__ __imag__
   syn keyword	cStorageClass	__attribute__ __const__ __extension__
-  syn keyword	cStorageClass	inline __inline__
+  syn keyword	cStorageClass	inline __inline __inline__
   syn keyword	cStorageClass	__restrict__ __volatile__ __noreturn__
 endif
 syn keyword	cType		int long short char void
@@ -348,7 +349,10 @@ if !exists("c_no_ansi") || exists("c_ansi_constants") || exists("c_gnu")
   syn keyword cConstant SIGABRT SIGALRM SIGCHLD SIGCONT SIGFPE SIGHUP SIGILL SIGINT SIGKILL SIGPIPE SIGQUIT SIGSEGV
   syn keyword cConstant SIGSTOP SIGTERM SIGTRAP SIGTSTP SIGTTIN SIGTTOU SIGUSR1 SIGUSR2
   syn keyword cConstant _IOFBF _IOLBF _IONBF BUFSIZ EOF WEOF FOPEN_MAX FILENAME_MAX L_tmpnam
-  syn keyword cConstant SEEK_CUR SEEK_END SEEK_SET TMP_MAX stderr stdin stdout EXIT_FAILURE EXIT_SUCCESS RAND_MAX
+  syn keyword cConstant SEEK_CUR SEEK_END SEEK_SET TMP_MAX EXIT_FAILURE EXIT_SUCCESS RAND_MAX
+  syn keyword cConstant stdin stdout stderr
+  " POSIX 2001, in unistd.h
+  syn keyword cConstant STDIN_FILENO STDOUT_FILENO STDERR_FILENO
   " used in assert.h
   syn keyword cConstant NDEBUG
   " POSIX 2001
@@ -440,6 +444,14 @@ syn match	cUserLabel	display "\I\i*" contained
 syn match	cBitField	display "^\s*\zs\I\i*\s*:\s*[1-9]"me=e-1 contains=cType
 syn match	cBitField	display ";\s*\zs\I\i*\s*:\s*[1-9]"me=e-1 contains=cType
 
+if exists("c_functions")
+  syn match cFunction "\<\h\w*\ze\_s*("
+ endif
+
+if exists("c_function_pointers")
+  syn match cFunctionPointer "\%((\s*\*\s*\)\@<=\h\w*\ze\s*)\_s*(.*)"
+endif
+
 if exists("c_minlines")
   let b:c_minlines = c_minlines
 else
@@ -509,6 +521,8 @@ hi def link cCppOutSkip		cCppOutIf2
 hi def link cCppInElse2		cCppOutIf2
 hi def link cCppOutIf2		cCppOut
 hi def link cCppOut		Comment
+hi def link cFunction		Function
+hi def link cFunctionPointer	Function
 
 let b:current_syntax = "c"
 

@@ -82,7 +82,7 @@ only bytes can be written to Nvim's own stderr.
     thus the first and last items in the {data} list may be partial lines.
     Empty string completes the previous partial line. Examples (not including
     the final `['']` emitted at EOF):
-      - `foobar` may arrive as `['fo'], ['obar']` 
+      - `foobar` may arrive as `['fo'], ['obar']`
       - `foo\nbar` may arrive as
 	- `['foo','bar']`
 	- or `['foo',''], ['bar']`
@@ -117,7 +117,7 @@ simple example, echoing some data through a cat-process:
     call chansend(id, "hello!")
 <
 
-Here is a example of setting a buffer to the result of grep, but only after
+Here is an example of setting a buffer to the result of grep, but only after
 all data has been processed:
 >vim
     function! s:OnEvent(id, data, event) dict
@@ -151,7 +151,7 @@ from the host TTY, or if Nvim is |--headless| it uses default values: >vim
 When channels are opened with the `rpc` option set to true, the channel can be
 used for remote method calls in both directions, see |msgpack-rpc|. Note that
 rpc channels are implicitly trusted and the process at the other end can
-invoke any |api| function!
+invoke any |API| function!
 
 ==============================================================================
 4. Standard IO channel					    *channel-stdio*

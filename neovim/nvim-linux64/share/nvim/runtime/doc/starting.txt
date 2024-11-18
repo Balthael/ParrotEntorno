@@ -139,7 +139,7 @@ argument.
 
 --cmd {command}						*--cmd*
 		{command} will be executed before processing any vimrc file.
-		Otherwise it acts like -c {command}.  You can use up to 10 of
+		Otherwise, it acts like -c {command}.  You can use up to 10 of
 		these commands, independently from "-c" commands.
 
 							*-S*
@@ -224,9 +224,11 @@ argument.
 		All [args] are treated as {script} arguments and stored in the
 		Lua `_G.arg` global table, thus "-l" ends processing of Nvim
 		arguments. The {script} name is stored at `_G.arg[0]`.
-		
+
 		Sets 'verbose' to 1 (like "-V1"), so Lua `print()` writes to
 		output.
+		If {script} prints messages and doesn't cause Nvim to exit,
+		Nvim ensures output ends with a newline.
 
 		Arguments before "-l" are processed before executing {script}.
 		This example quits before executing "foo.lua": >
@@ -241,8 +243,8 @@ argument.
 
 							*-ll*
 -ll {script} [args]
-		Execute a lua script, similarly to |-l|, but the editor is not
-		initialized. This gives a lua environment similar to a worker
+		Execute a Lua script, similarly to |-l|, but the editor is not
+		initialized. This gives a Lua environment similar to a worker
 		thread. See |lua-loop-threading|.
 
 		Unlike `-l` no prior arguments are allowed.
@@ -258,7 +260,8 @@ argument.
 -A		Arabic mode.  Sets the 'arabic' option on.
 
 							*-H*
--H		Hebrew mode.  Sets the 'rightleft' option on and 'keymap' to "hebrew"
+-H		Hebrew mode.  Sets the 'rightleft' option on and the 'keymap'
+		option to "hebrew".
 
 							*-V* *verbose*
 -V[N]		Verbose.  Sets the 'verbose' option to [N] (default: 10).
@@ -304,7 +307,7 @@ argument.
 		few windows will be editing an empty file.
 
 							*-O*
--O[N]		Open N windows, split vertically.  Otherwise it's like -o.
+-O[N]		Open N windows, split vertically.  Otherwise, it's like -o.
 		If both the -o and the -O option are given, the last one on
 		the command line determines how the windows will be split.
 
@@ -323,8 +326,10 @@ argument.
 
 		This can be used to start Vim in a special mode, with special
 		mappings and settings.  A shell alias can be used to make
-		this easy to use.  For example: >
-			alias vimc vim -u ~/.config/nvim/c_init.vim !*
+		this easy to use.  For example, in a C shell descendant: >
+			alias vimc 'nvim -u ~/.config/nvim/c_init.vim \!*'
+<		And in a Bash shell: >
+			alias vimc='nvim -u ~/.config/nvim/c_init.vim'
 <		Also consider using autocommands; see |autocommand|.
 
 		When {vimrc} is "NONE" (all uppercase), all initializations
@@ -388,6 +393,10 @@ argument.
 <		Then startup will continue without waiting for `nvim_ui_attach`.
 		This is equivalent to: >
 		    nvim --headless --cmd "call stdioopen({'rpc': v:true})"
+<
+		Embedders that use the UI protocol on a socket connection must
+		pass |--listen| as well as |--embed|: >
+		    nvim --embed --listen addr
 
 <		See also: |ui-startup| |channel-stdio|
 
@@ -426,9 +435,11 @@ accordingly, proceeding as follows:
 
 2. Process the arguments
 	The options and file names from the command that start Vim are
-	inspected.  Buffers are created for all files (but not loaded yet).
+	inspected.
 	The |-V| argument can be used to display or log what happens next,
 	useful for debugging the initializations.
+	The |--cmd| arguments are executed.
+	Buffers are created for all files (but not loaded yet).
 
 3. Start a server (unless |--listen| was given) and set |v:servername|.
 
@@ -502,12 +513,12 @@ accordingly, proceeding as follows:
 
 10. Load the plugin scripts.					*load-plugins*
 	This does the same as the command: >
-		:runtime! plugin/**/*.vim
-		:runtime! plugin/**/*.lua
+		:runtime! plugin/**/*.{vim,lua}
 <	The result is that all directories in 'runtimepath' will be searched
 	for the "plugin" sub-directory and all files ending in ".vim" or
 	".lua" will be sourced (in alphabetical order per directory),
-	also in subdirectories. First "*.vim" are sourced, then "*.lua" files.
+	also in subdirectories. First "*.vim" are sourced, then "*.lua" files,
+	per directory.
 
 	However, directories in 'runtimepath' ending in "after" are skipped
 	here and only loaded after packages, see below.
@@ -536,7 +547,7 @@ accordingly, proceeding as follows:
 	This means that Nvim will figure out the values of 'shellpipe' and
 	'shellredir' for you, unless you have set them yourself.
 
-12. Set 'updatecount' to zero, if "-n" command argument used
+12. Set 'updatecount' to zero, if "-n" command argument used.
 
 13. Set binary options if the |-b| flag was given.
 
@@ -573,11 +584,11 @@ Avoiding trojan horses ~
 							*trojan-horse*
 While reading the "vimrc" or the "exrc" file in the current directory, some
 commands can be disabled for security reasons by setting the 'secure' option.
-This is always done when executing the command from a tags file.  Otherwise it
-would be possible that you accidentally use a vimrc or tags file that somebody
-else created and contains nasty commands.  The disabled commands are the ones
-that start a shell, the ones that write to a file, and ":autocmd".  The ":map"
-commands are echoed, so you can see which keys are being mapped.
+This is always done when executing the command from a tags file.  Otherwise,
+it would be possible that you accidentally use a vimrc or tags file that
+somebody else created and contains nasty commands.  The disabled commands are
+the ones that start a shell, the ones that write to a file, and ":autocmd".
+The ":map" commands are echoed, so you can see which keys are being mapped.
 	If you want Vim to execute all commands in a local vimrc file, you
 can reset the 'secure' option in the EXINIT or VIMINIT environment variable or
 in the global exrc or vimrc file.  This is not possible in vimrc or
@@ -735,7 +746,7 @@ these are terminal or file dependent.
 Note that the options 'binary', 'paste' and 'readonly' are included, this
 might not always be what you want.
 
-When special keys are used in mappings, The 'cpoptions' option will be
+When special keys are used in mappings, the 'cpoptions' option will be
 temporarily set to its Vim default, to avoid the mappings to be
 misinterpreted.  This makes the file incompatible with Vi, but makes sure it
 can be used with different terminals.
@@ -789,8 +800,8 @@ You can quickly start editing with a previously saved View or Session with the
 							*:mks* *:mksession*
 :mks[ession][!] [file]	Write a Vim script that restores the current editing
 			session.
-			When [!] is included an existing file is overwritten.
-			When [file] is omitted "Session.vim" is used.
+			When [!] is included, an existing file is overwritten.
+			When [file] is omitted, "Session.vim" is used.
 
 The output of ":mksession" is like ":mkvimrc", but additional commands are
 added to the file.  Which ones depends on the 'sessionoptions' option.  The
@@ -802,16 +813,16 @@ resulting file, when executed with a ":source" command:
 3. Closes all windows in the current tab page, except the current one; closes
    all tab pages except the current one (this results in currently loaded
    buffers to be unloaded, some may become hidden if 'hidden' is set or
-   otherwise specified); wipes out the current buffer, if it is empty
-   and unnamed.
-4. Restores the current directory if 'sessionoptions' contains "curdir", or
-   sets the current directory to where the Session file is if 'sessionoptions'
-   contains "sesdir".
+   otherwise specified); wipes out the current buffer, if it is empty and
+   unnamed.
+4. Restores the current directory, if 'sessionoptions' contains "curdir", or
+   sets the current directory to where the Session file is, if
+   'sessionoptions' contains "sesdir".
 5. Restores GUI Vim window position, if 'sessionoptions' contains "winpos".
 6. Restores screen size, if 'sessionoptions' contains "resize".
 7. Reloads the buffer list, with the last cursor positions.  If
    'sessionoptions' contains "buffers" then all buffers are restored,
-   including hidden and unloaded buffers.  Otherwise only buffers in windows
+   including hidden and unloaded buffers.  Otherwise, only buffers in windows
    are restored.
 8. Restores all windows with the same layout.  If 'sessionoptions' contains
    "help", help windows are restored.  If 'sessionoptions' contains "blank",
@@ -822,7 +833,7 @@ resulting file, when executed with a ":source" command:
 9. Restores the Views for all the windows, as with |:mkview|.  But
    'sessionoptions' is used instead of 'viewoptions'.
 10. If a file exists with the same name as the Session file, but ending in
-   "x.vim" (for eXtra), executes that as well.  You can use *x.vim files to
+   "x.vim" (for eXtra), executes that as well.  You can use `*x.vim` files to
    specify additional settings and actions associated with a given Session,
    such as creating menu items in the GUI version.
 
@@ -838,14 +849,14 @@ A session includes all tab pages, unless "tabpages" was removed from
 The |SessionLoadPost| autocmd event is triggered after a session file is
 loaded/sourced.
 						*SessionLoad-variable*
-While the session file is loading the SessionLoad global variable is set to 1.
-Plugins can use this to postpone some work until the SessionLoadPost event is
-triggered.
+While the session file is loading, the SessionLoad global variable is set to
+1.  Plugins can use this to postpone some work until the SessionLoadPost event
+is triggered.
 
 							*:mkvie* *:mkview*
 :mkvie[w][!] [file]	Write a Vim script that restores the contents of the
 			current window.
-			When [!] is included an existing file is overwritten.
+			When [!] is included, an existing file is overwritten.
 			When [file] is omitted or is a number from 1 to 9, a
 			name is generated and 'viewdir' prepended.  When the
 			last path part of 'viewdir' does not exist, this
@@ -860,14 +871,13 @@ triggered.
 
 The output of ":mkview" contains these items:
 1. The argument list used in the window.  When the global argument list is
-   used it is reset to the global list.
+   used, it is reset to the global list.
    The index in the argument list is also restored.
 2. The file being edited in the window.  If there is no file, the window is
    made empty.
-3. Restore mappings, abbreviations and options local to the window if
-   'viewoptions' contains "options" or "localoptions".  For the options it
-   restores only values that are local to the current buffer and values local
-   to the window.
+3. Restore mappings, abbreviations and options local to the window, if
+   'viewoptions' contains "options" or "localoptions".  Only option values
+   that are local to the current buffer and the current window are restored.
    When storing the view as part of a session and "options" is in
    'sessionoptions', global values for local options will be stored too.
 4. Restore folds when using manual folding and 'viewoptions' contains
@@ -901,12 +911,12 @@ Note that Views and Sessions are not perfect:
 The combination of ":mkview" and ":loadview" can be used to store up to ten
 different views of a file.  These are remembered in the directory specified
 with the 'viewdir' option.  The views are stored using the file name.  If a
-file is renamed or accessed through a (symbolic) link the view will not be
+file is renamed or accessed through a (symbolic) link, the view will not be
 found.
 
 You might want to clean up your 'viewdir' directory now and then.
 
-To automatically save and restore views for *.c files: >
+To automatically save and restore views for `*.c` files: >
 	au BufWinLeave *.c mkview
 	au BufWinEnter *.c silent! loadview
 
@@ -916,7 +926,7 @@ Shada ("shared data") file			*shada* *shada-file*
 If you exit Vim and later start it again, you would normally lose a lot of
 information.  The ShaDa file can be used to remember that information, which
 enables you to continue where you left off.  Its name is the abbreviation of
-SHAred DAta because it is used for sharing data between Neovim sessions.
+SHAred DAta because it is used for sharing data between Nvim sessions.
 
 This is introduced in section |21.3| of the user manual.
 
@@ -961,7 +971,7 @@ Notes for Unix:
   allow just anybody to read and write your ShaDa file!
 - Vim will not overwrite a ShaDa file that is not writable by the current
   "real" user.  This helps for when you did "su" to become root, but your
-  $HOME is still set to a normal user's home directory.  Otherwise Vim would
+  $HOME is still set to a normal user's home directory.  Otherwise, Vim would
   create a ShaDa file owned by root that nobody else can read.
 - The ShaDa file cannot be a symbolic link.  This is to avoid security
   issues.
@@ -993,11 +1003,11 @@ using this command: >
 
 	vim -c "normal '0"
 
-In a csh compatible shell you could make an alias for it: >
+In a C shell descendant, you could make an alias for it: >
 
 	alias lvim vim -c '"'normal "'"0'"'
 
-For a bash-like shell: >
+For a Bash-like shell: >
 
 	alias lvim='vim -c "normal '\''0"'
 
@@ -1008,16 +1018,16 @@ MERGING							*shada-merging*
 
 When writing ShaDa files with |:wshada| without bang or at regular exit
 information in the existing ShaDa file is merged with information from current
-Neovim instance.  For this purpose ShaDa files store timestamps associated
+Nvim instance.  For this purpose ShaDa files store timestamps associated
 with ShaDa entries.  Specifically the following is being done:
 
 1. History lines are merged, ordered by timestamp.  Maximum amount of items in
    ShaDa file is defined by 'shada' option (|shada-/|, |shada-:|, |shada-@|,
    etc: one suboption for each character that represents history name
    (|:history|)).
-2. Local marks and changes for files that were not opened by Neovim are copied
-   to new ShaDa file. Marks for files that were opened by Neovim are merged,
-   changes to files opened by Neovim are ignored. |shada-'|
+2. Local marks and changes for files that were not opened by Nvim are copied
+   to new ShaDa file. Marks for files that were opened by Nvim are merged,
+   changes to files opened by Nvim are ignored. |shada-'|
 3. Jump list is merged: jumps are ordered by timestamp, identical jumps
    (identical position AND timestamp) are squashed.
 4. Search patterns and substitute strings are not merged: search pattern or
@@ -1025,14 +1035,14 @@ with ShaDa entries.  Specifically the following is being done:
    to ShaDa file.
 5. For each register entity with greatest timestamp is the only saved.
    |shada-<|
-6. All saved variables are saved from current Neovim instance. Additionally
+6. All saved variables are saved from current Nvim instance. Additionally
    existing variable values are copied, meaning that the only way to remove
    variable from a ShaDa file is either removing it by hand or disabling
    writing variables completely. |shada-!|
 7. For each global mark entity with greatest timestamp is the only saved.
 8. Buffer list and header are the only entries which are not merged in any
    fashion: the only header and buffer list present are the ones from the
-   Neovim instance which was last writing the file. |shada-%|
+   Nvim instance which was last writing the file. |shada-%|
 
 COMPATIBILITY						*shada-compatibility*
 
@@ -1057,13 +1067,13 @@ ShaDa files are forward and backward compatible.  This means that
    history types. |history|
 6. Unknown keys found in register, local mark, global mark, change, jump and
    search pattern entries are saved internally and dumped when writing.
-   Entries created during Neovim session never have such additions.
+   Entries created during Nvim session never have such additions.
 7. Additional elements found in replacement string and history entries are
-   saved internally and dumped. Entries created during Neovim session never
+   saved internally and dumped. Entries created during Nvim session never
    have such additions.
 8. Additional elements found in variable entries are simply ignored when
    reading. When writing new variables they will be preserved during merging,
-   but that's all. Variable values dumped from current Neovim session never
+   but that's all. Variable values dumped from current Nvim session never
    have additional elements, even if variables themselves were obtained by
    reading ShaDa files.
 
@@ -1091,16 +1101,16 @@ MANUALLY READING AND WRITING				*shada-read-write*
 Two commands can be used to read and write the ShaDa file manually.  This
 can be used to exchange registers between two running Vim programs: First
 type ":wsh" in one and then ":rsh" in the other.  Note that if the register
-already contained something, then ":rsh!" would be required.  Also note
-however that this means everything will be overwritten with information from
+already contained something, then ":rsh!" would be required.  Also note,
+however, that this means everything will be overwritten with information from
 the first Vim, including the command line history, etc.
 
 The ShaDa file itself can be edited by hand too, although we suggest you
 start with an existing one to get the format right.  You need to understand
 MessagePack (or, more likely, find software that is able to use it) format to
 do this.  This can be useful in order to create a second file, say
-"~/.my.shada" which could contain certain settings that you always want when
-you first start Neovim.  For example, you can preload registers with
+"~/.my.shada", which could contain certain settings that you always want when
+you first start Nvim.  For example, you can preload registers with
 particular data, or put certain commands in the command line history.  A line
 in your |config| file like >
 	:rshada! ~/.my.shada
@@ -1110,12 +1120,13 @@ file name, using the ":autocmd" command (see |:autocmd|).  More information on
 ShaDa file format is contained in |shada-format| section.
 
 					  *E136* *E929* *shada-error-handling*
-Some errors make Neovim leave temporary file named `{basename}.tmp.X` (X is
+Some errors make Nvim leave temporary file named `{basename}.tmp.X` (X is
 any free letter from `a` to `z`) while normally it will create this file,
 write to it and then rename `{basename}.tmp.X` to `{basename}`. Such errors
 include:
 
-- Errors which make Neovim think that read file is not a ShaDa file at all:
+- Errors which make Nvim think that the file being read is not a ShaDa
+  file at all:
   non-ShaDa files are not overwritten for safety reasons to avoid accidentally
   destroying an unrelated file.  This could happen e.g. when typing "nvim -i
   file" in place of "nvim -R file" (yes, somebody did that at least with Vim).
@@ -1123,26 +1134,26 @@ include:
 - If writing to the temporary file failed: e.g. because of the insufficient
   space left.
 - If renaming file failed: e.g. because of insufficient permissions.
-- If target ShaDa file has different from the Neovim instance's owners (user
+- If target ShaDa file has different from the Nvim instance's owners (user
   and group) and changing them failed.  Unix-specific, applies only when
-  Neovim was launched from root.
+  Nvim was launched from root.
 
 Do not forget to remove the temporary file or replace the target file with
 temporary one after getting one of the above errors or all attempts to create
 a ShaDa file may fail with |E929|.  If you got one of them when using
-|:wshada| (and not when exiting Neovim: i.e. when you have Neovim session
+|:wshada| (and not when exiting Nvim: i.e. when you have Nvim session
 running) you have additional options:
 
 - First thing which you should consider if you got any error, except failure
   to write to the temporary file: remove existing file and replace it with the
-  temporary file.  Do it even if you have running Neovim instance.
+  temporary file.  Do it even if you have running Nvim instance.
 - Fix the permissions and/or file ownership, free some space and attempt to
   write again.  Do not remove the existing file.
 - Use |:wshada| with bang.  Does not help in case of permission error.  If
   target file was actually the ShaDa file some information may be lost in this
   case.  To make the matters slightly better use |:rshada| prior to writing,
   but this still will loose buffer-local marks and change list entries for any
-  file which is not opened in the current Neovim instance.
+  file which is not opened in the current Nvim instance.
 - Remove the target file from shell and use |:wshada|.  Consequences are not
   different from using |:wshada| with bang, but "rm -f" works in some cases
   when you don't have write permissions.
@@ -1162,8 +1173,8 @@ running) you have additional options:
 			described in |shada-error-handling|).  If 'shada' is
 			empty, marks for up to 100 files will be written.
 			When you get error "E929: All .tmp.X files exist,
-			cannot write ShaDa file!" check that no old temp files
-			were left behind (e.g.
+			cannot write ShaDa file!", check that no old temp
+			files were left behind (e.g.
 			~/.local/state/nvim/shada/main.shada.tmp*).
 
 			Note: Executing :wshada will reset all |'quote| marks.
@@ -1183,7 +1194,7 @@ running) you have additional options:
 			the list is edited.
 			If you get the |press-enter| prompt you can press "q"
 			and still get the prompt to enter a file number.
-			Use ! to abandon a modified buffer. |abandon|
+			Use [!] to abandon a modified buffer. |abandon|
 
 SHADA FILE FORMAT						*shada-format*
 
@@ -1209,7 +1220,7 @@ exactly four MessagePack objects:
                        Key        Data ~
                        generator  Binary, software used to generate ShaDa
                                   file. Is equal to "nvim" when ShaDa file was
-                                  written by Neovim.
+                                  written by Nvim.
                        version    Binary, generator version.
                        encoding   Binary, effective 'encoding' value.
                        max_kbyte  Integer, effective |shada-s| limit value.
@@ -1302,7 +1313,7 @@ exactly four MessagePack objects:
    10 (LocalMark)
    11 (Change)         Map containing some position description:
                        Entry      Position ~
-                       GlobaMark  Global mark position. |'A|
+                       GlobalMark Global mark position. |'A|
                        LocalMark  Local mark position. |'a|
                        Jump       One position from the |jumplist|.
                        Change     One position from the |changelist|.
@@ -1333,10 +1344,13 @@ exactly four MessagePack objects:
                        reasons, see |shada-compatibility|.
 
 								*E575* *E576*
-Errors in ShaDa file may have two types: E575 used for all “logical” errors
-and E576 used for all “critical” errors.  Critical errors trigger behaviour
-described in |shada-error-handling| when writing and skipping the rest of the
-file when reading and include:
+Errors in ShaDa file may have two types:
+1. E575 for “logical” errors.
+2. E576 for “critical” errors.
+When writing, critical errors trigger behaviour described in
+|shada-error-handling|.
+When reading, critical errors cause the rest of the file to be skipped.
+Critical errors include:
 					    *shada-critical-contents-errors*
 - Any of first three MessagePack objects being not an unsigned integer.
 - Third object requesting amount of bytes greater then bytes left in the ShaDa
@@ -1358,9 +1372,12 @@ paths.
 						*base-directories* *xdg*
 The "base" (root) directories conform to the XDG Base Directory Specification.
 https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
-The $XDG_CONFIG_HOME, $XDG_DATA_HOME, $XDG_RUNTIME_DIR, and $XDG_STATE_HOME
-environment variables are used if defined, else default values (listed below)
-are used.
+The $XDG_CONFIG_HOME, $XDG_DATA_HOME, $XDG_RUNTIME_DIR, $XDG_STATE_HOME,
+$XDG_CACHE_HOME, $XDG_CONFIG_DIRS and $XDG_DATA_DIRS environment variables
+are used if defined, else default values (listed below) are used.
+
+Throughout the help pages these defaults are used as placeholders, e.g.
+"~/.config" is understood to mean "$XDG_CONFIG_HOME or ~/.config".
 
 CONFIG DIRECTORY (DEFAULT) ~
                   *$XDG_CONFIG_HOME*            Nvim: stdpath("config")
@@ -1382,27 +1399,51 @@ STATE DIRECTORY (DEFAULT) ~
     Unix:         ~/.local/state              ~/.local/state/nvim
     Windows:      ~/AppData/Local             ~/AppData/Local/nvim-data
 
-Note: Throughout the user manual these defaults are used as placeholders, e.g.
-"~/.config" is understood to mean "$XDG_CONFIG_HOME or ~/.config".
+CACHE DIRECTORY (DEFAULT) ~
+                  *$XDG_CACHE_HOME*             Nvim: stdpath("cache")
+    Unix:         ~/.cache                    ~/.cache/nvim
+    Windows:      ~/AppData/Local/Temp        ~/AppData/Local/Temp/nvim-data
+
+LOG FILE (DEFAULT) ~
+                  `$NVIM_LOG_FILE`              Nvim: stdpath("log")/log
+    Unix:         ~/.local/state/nvim         ~/.local/state/nvim/log
+    Windows:      ~/AppData/Local/nvim-data   ~/AppData/Local/nvim-data/log
+
+Note that stdpath("log") is currently an alias for stdpath("state").
+
+ADDITIONAL CONFIGS DIRECTORY (DEFAULT) ~
+                  *$XDG_CONFIG_DIRS*            Nvim: stdpath("config_dirs")
+    Unix:         /etc/xdg/                   /etc/xdg/nvim
+    Windows:      Not applicable              Not applicable
+
+ADDITIONAL DATA DIRECTORY (DEFAULT) ~
+                  *$XDG_DATA_DIRS*              Nvim: stdpath("data_dirs")
+    Unix:         /usr/local/share            /usr/local/share/nvim
+                  /usr/share                  /usr/share/nvim
+    Windows:      Not applicable              Not applicable
 
 NVIM_APPNAME					*$NVIM_APPNAME*
-The XDG directories used by Nvim can be further configured by setting the
-`$NVIM_APPNAME` environment variable. This variable controls the directory
-Neovim will look for (and auto-create) in the various XDG parent directories.
-For example, setting `$NVIM_APPNAME` to "neovim" before running Neovim will
-result in Neovim looking for configuration files in `$XDG_CONFIG_HOME/neovim`
-instead of `$XDG_CONFIG_HOME/nvim`.
+The standard directories can be further configured by the `$NVIM_APPNAME`
+environment variable. This variable controls the sub-directory that Nvim will
+read from (and auto-create) in each of the base directories. For example,
+setting `$NVIM_APPNAME` to "foo" before starting will cause Nvim to look for
+configuration files in `$XDG_CONFIG_HOME/foo` instead of
+`$XDG_CONFIG_HOME/nvim`. `$NVIM_APPNAME` must be a name, such as "foo", or a
+relative path, such as "foo/bar".
 
-Note: Similarly to the $XDG environment variables, when
-`$XDG_CONFIG_HOME/nvim` is mentioned, it should be understood as
-`$XDG_CONFIG_HOME/$NVIM_APPNAME`.
+One use-case for $NVIM_APPNAME is to "isolate" Nvim applications.
+Alternatively, for true isolation, on Linux you can use cgroups namespaces: >
+    systemd-run --user -qt -p PrivateUsers=yes -p BindPaths=/home/user/profile_xy:/home/user/.config/nvim nvim
+
+Note: Throughout the help pages, wherever `$XDG_CONFIG_…/nvim` is mentioned it
+is understood to mean `$XDG_CONFIG_…/$NVIM_APPNAME`.
 
 LOG FILE					*log* *$NVIM_LOG_FILE* *E5430*
 Besides 'debug' and 'verbose', Nvim keeps a general log file for internal
 debugging, plugins and RPC clients. >
 	:echo $NVIM_LOG_FILE
-By default, the file is located at stdpath("log")/log unless that path
-is inaccessible or if $NVIM_LOG_FILE was set before |startup|.
+By default, the file is located at stdpath("log")/log ($XDG_STATE_HOME/nvim/log)
+unless that path is inaccessible or if $NVIM_LOG_FILE was set before |startup|.
 
 
  vim:noet:tw=78:ts=8:ft=help:norl:

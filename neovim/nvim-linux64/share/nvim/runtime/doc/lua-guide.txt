@@ -30,7 +30,7 @@ The purpose of this guide is to introduce the different ways of interacting
 with Nvim through Lua (the "API"). This API consists of three different
 layers:
 
-1. The "Vim API" inherited from Vim: |ex-commands| and |builtin-functions| as
+1. The "Vim API" inherited from Vim: |Ex-commands| and |builtin-functions| as
 well as |user-function|s in Vimscript. These are accessed through |vim.cmd()|
 and |vim.fn| respectively, which are discussed under |lua-guide-vimscript|
 below.
@@ -80,7 +80,7 @@ exactly like for a Vimscript file:
     :source ~/programs/baz/myluafile.lua
 <
 Finally, you can include Lua code in a Vimscript file by putting it inside a
-|lua-heredoc| block:
+|:lua-heredoc| block:
 >vim
     lua << EOF
       local tbl = {1, 2, 3}
@@ -114,10 +114,10 @@ Let's assume you have the following directory structure:
     |-- after/
     |-- ftplugin/
     |-- lua/
-    |  |-- myluamodule.lua
-    |  |-- other_modules/
-    |     |-- anothermodule.lua
-    |     |-- init.lua
+    |   |-- myluamodule.lua
+    |   |-- other_modules/
+    |       |-- anothermodule.lua
+    |       |-- init.lua
     |-- plugin/
     |-- syntax/
     |-- init.vim
@@ -157,7 +157,7 @@ its functions if this succeeds and prints an error message otherwise:
     end
 <
 In contrast to |:source|, |require()| not only searches through all `lua/` directories
-under |'runtimepath'|, it also cache the module on first use. Calling
+under |'runtimepath'|, it also caches the module on first use. Calling
 `require()` a second time will therefore _not_ execute the script again and
 instead return the cached file. To rerun the file, you need to remove it from
 the cache manually first:
@@ -167,8 +167,8 @@ the cache manually first:
 <
 ------------------------------------------------------------------------------
 See also:
-• |lua-require|
-• |luaref-pcall()|
+• |lua-module-load|
+• |pcall()|
 
 ==============================================================================
 Using Vim commands and functions from Lua                  *lua-guide-vimscript*
@@ -186,7 +186,7 @@ Note that special characters will need to be escaped with backslashes:
 >lua
     vim.cmd("%s/\\Vfoo/bar/g")
 <
-An alternative is to use a literal string (see |luaref-literal|) delimited by
+An alternative is to use a literal string (see |lua-literal|) delimited by
 double brackets `[[ ]]` as in
 >lua
     vim.cmd([[%s/\Vfoo/bar/g]])
@@ -199,8 +199,8 @@ this allows you to pass multiple commands to a single call of |vim.cmd()|:
       highlight link Warning Error
     ]])
 <
-This is the converse of |lua-heredoc| and allows you to include Vimscript code in
-your `init.lua`.
+This is the converse of |:lua-heredoc| and allows you to include Vimscript
+code in your `init.lua`.
 
 If you want to build your Vim command programmatically, the following form can
 be useful (all these are equivalent to the corresponding line above):
@@ -218,7 +218,7 @@ Vimscript are automatically converted:
     print(vim.fn.printf('Hello from %s', 'Lua'))
 
     local reversed_list = vim.fn.reverse({ 'a', 'b', 'c' })
-    print(vim.inspect(reversed_list)) -- { "c", "b", "a" }
+    vim.print(reversed_list) -- { "c", "b", "a" }
 
     local function print_stdout(chan_id, data, name)
       print(data[1])
@@ -261,7 +261,7 @@ Data types are converted automatically. For example:
       key2 = 300
     }
 
-    print(vim.inspect(vim.g.some_global_variable))
+    vim.print(vim.g.some_global_variable)
     --> { key1 = "value", key2 = 300 }
 <
 You can target specific buffers (via number), windows (via |window-ID|), or
@@ -363,7 +363,7 @@ and `:let &listchars='space:_,tab:>~'`:
 • |vim.o|:  behaves like |:set|
 • |vim.go|: behaves like |:setglobal|
 • |vim.bo|: for buffer-scoped options
-• |vim.wo|: for window-scoped options
+• |vim.wo|: for window-scoped options (can be double indexed)
 
 For example:
 >lua
@@ -386,6 +386,9 @@ window is used:
 >lua
     vim.bo[4].expandtab = true -- sets expandtab to true in buffer 4
     vim.wo.number = true       -- sets number to true in current window
+    vim.wo[0].number = true    -- same as above
+    vim.wo[0][0].number = true -- sets number to true in current buffer
+                               -- in current window only
     print(vim.wo[0].number)    --> true
 <
 ------------------------------------------------------------------------------
@@ -459,9 +462,9 @@ useful options:
     vim.keymap.set('n', '<Leader>pl1', require('plugin').action,
       { desc = 'Execute action from plugin' })
 <
-• `remap`: By default, all mappings are nonrecursive by default (i.e.,
-  |vim.keymap.set()| behaves like |:noremap|). If the {rhs} is itself a mapping
-  that should be executed, set `remap = true`: >lua
+• `remap`: By default, all mappings are nonrecursive (i.e., |vim.keymap.set()|
+  behaves like |:noremap|). If the {rhs} is itself a mapping that should be
+  executed, set `remap = true`: >lua
     vim.keymap.set('n', '<Leader>ex1', '<cmd>echo "Example 1"<cr>')
     -- add a shorter mapping
     vim.keymap.set('n', 'e', '<Leader>ex1', { remap = true })
@@ -624,9 +627,9 @@ in a different file:
 >lua
     local mygroup = vim.api.nvim_create_augroup('vimrc', { clear = false })
     vim.api.nvim_create_autocmd({ 'BufNewFile', 'BufRead' }, {
-      pattern = '*.html',
+      pattern = '*.c',
       group = mygroup,
-      command = 'set shiftwidth=4',
+      command = 'set noexpandtab',
     })
 <
 ------------------------------------------------------------------------------
@@ -667,8 +670,8 @@ cover only the basics of this advanced topic.
 ------------------------------------------------------------------------------
 Creating user commands                           *lua-guide-commands-create*
 
-User commands can be created through with |nvim_create_user_command()|. This
-function takes three mandatory arguments:
+User commands can be created via |nvim_create_user_command()|. This function
+takes three mandatory arguments:
 • a string that is the name of the command (which must start with an uppercase
   letter to distinguish it from builtin commands);
 • a string containing Vim commands or a Lua function that is executed when the

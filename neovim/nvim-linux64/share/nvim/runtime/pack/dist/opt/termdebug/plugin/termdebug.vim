@@ -2,7 +2,7 @@
 "
 " Author: Bram Moolenaar
 " Copyright: Vim license applies, see ":help license"
-" Last Change: 2022 Nov 10
+" Last Change: 2023 Nov 02
 "
 " WORK IN PROGRESS - The basics works stable, more to come
 " Note: In general you need at least GDB 7.12 because this provides the
@@ -35,21 +35,14 @@
 " The communication with gdb uses GDB/MI.  See:
 " https://sourceware.org/gdb/current/onlinedocs/gdb/GDB_002fMI.html
 "
-" For neovim compatibility, the vim specific calls were replaced with neovim
-" specific calls:
-"   term_start -> termopen
-"   term_sendkeys -> chansend
-"   term_getline -> getbufline
-"   job_info && term_getjob -> using linux command ps to get the tty
-"   balloon -> nvim floating window
+" NEOVIM COMPATIBILITY
 "
-" The code for opening the floating window was taken from the beautiful
-" implementation of LanguageClient-Neovim:
-" https://github.com/autozimu/LanguageClient-neovim/blob/0ed9b69dca49c415390a8317b19149f97ae093fa/autoload/LanguageClient.vim#L304
-"
-" Neovim terminal also works seamlessly on windows, which is why the ability
-" Author: Bram Moolenaar
-" Copyright: Vim license applies, see ":help license"
+" The vim specific functionalities were replaced with neovim specific calls:
+" - term_start -> termopen
+" - term_sendkeys -> chansend
+" - term_getline -> getbufline
+" - job_info && term_getjob -> nvim_get_chan_info
+" - balloon -> vim.lsp.util.open_floating_preview
 
 " In case this gets sourced twice.
 if exists(':Termdebug')
@@ -75,6 +68,7 @@ let s:pc_id = 12
 let s:asm_id = 13
 let s:break_id = 14  " breakpoint number is added to this
 let s:stopped = 1
+let s:running = 0
 
 let s:parsing_disasm_msg = 0
 let s:asm_lines = []
@@ -87,6 +81,8 @@ func s:Breakpoint2SignNumber(id, subid)
   return s:break_id + a:id * 1000 + a:subid
 endfunction
 
+" Define or adjust the default highlighting, using background "new".
+" When the 'background' option is set then "old" has the old value.
 func s:Highlight(init, old, new)
   let default = a:init ? 'default ' : ''
   if a:new ==# 'light' && a:old !=# 'light'
@@ -96,9 +92,21 @@ func s:Highlight(init, old, new)
   endif
 endfunc
 
-call s:Highlight(1, '', &background)
-hi default debugBreakpoint term=reverse ctermbg=red guibg=red
-hi default debugBreakpointDisabled term=reverse ctermbg=gray guibg=gray
+" Define the default highlighting, using the current 'background' value.
+func s:InitHighlight()
+  call s:Highlight(1, '', &background)
+  hi default debugBreakpoint term=reverse ctermbg=red guibg=red
+  hi default debugBreakpointDisabled term=reverse ctermbg=gray guibg=gray
+endfunc
+
+" Setup an autocommand to redefine the default highlight when the colorscheme
+" is changed.
+func s:InitAutocmd()
+  augroup TermDebug
+    autocmd!
+    autocmd ColorScheme * call s:InitHighlight()
+  augroup END
+endfunc
 
 " Get the command to execute the debugger as a list, defaults to ["gdb"].
 func s:GetCommand()
@@ -113,6 +121,10 @@ func s:GetCommand()
   return type(cmd) == v:t_list ? copy(cmd) : [cmd]
 endfunc
 
+func s:Echoerr(msg)
+  echohl ErrorMsg | echom '[termdebug] ' .. a:msg | echohl None
+endfunc
+
 func s:StartDebug(bang, ...)
   " First argument is the command to debug, second core file or process ID.
   call s:StartDebug_internal({'gdb_args': a:000, 'bang': a:bang})
@@ -125,18 +137,21 @@ endfunc
 
 func s:StartDebug_internal(dict)
   if exists('s:gdbwin')
-    echoerr 'Terminal debugger already running, cannot run two'
+    call s:Echoerr('Terminal debugger already running, cannot run two')
     return
   endif
   let gdbcmd = s:GetCommand()
   if !executable(gdbcmd[0])
-    echoerr 'Cannot execute debugger program "' .. gdbcmd[0] .. '"'
+    call s:Echoerr('Cannot execute debugger program "' .. gdbcmd[0] .. '"')
     return
   endif
 
   let s:ptywin = 0
   let s:pid = 0
   let s:asmwin = 0
+  let s:asmbuf = 0
+  let s:varwin = 0
+  let s:varbuf = 0
 
   if exists('#User#TermdebugStartPre')
     doauto <nomodeline> User TermdebugStartPre
@@ -145,7 +160,7 @@ func s:StartDebug_internal(dict)
   " Uncomment this line to write logging in "debuglog".
   " call ch_logfile('debuglog', 'w')
 
-  let s:sourcewin = win_getid(winnr())
+  let s:sourcewin = win_getid()
 
   " Remember the old value of 'signcolumn' for each buffer that it's set in, so
   " that we can restore the value for all buffers.
@@ -182,9 +197,9 @@ func s:StartDebug_internal(dict)
   endif
   if !has('win32') && !use_prompt
     let s:way = 'terminal'
-   else
+  else
     let s:way = 'prompt'
-   endif
+  endif
 
   if s:way == 'prompt'
     call s:StartDebug_prompt(a:dict)
@@ -193,8 +208,14 @@ func s:StartDebug_internal(dict)
   endif
 
   if s:GetDisasmWindow()
-    let curwinid = win_getid(winnr())
+    let curwinid = win_getid()
     call s:GotoAsmwinOrCreateIt()
+    call win_gotoid(curwinid)
+  endif
+
+  if s:GetVariablesWindow()
+    let curwinid = win_getid()
+    call s:GotoVariableswinOrCreateIt()
     call win_gotoid(curwinid)
   endif
 
@@ -206,14 +227,21 @@ endfunc
 " Use when debugger didn't start or ended.
 func s:CloseBuffers()
   exe 'bwipe! ' . s:ptybuf
+  if s:asmbuf > 0 && bufexists(s:asmbuf)
+    exe 'bwipe! ' . s:asmbuf
+  endif
+  if s:varbuf > 0 && bufexists(s:varbuf)
+    exe 'bwipe! ' . s:varbuf
+  endif
+  let s:running = 0
   unlet! s:gdbwin
 endfunc
 
 func s:CheckGdbRunning()
-  if !s:running
-      echoerr string(s:GetCommand()[0]) . ' exited unexpectedly'
-      call s:CloseBuffers()
-      return ''
+  if !s:gdb_running
+    call s:Echoerr(string(s:GetCommand()[0]) . ' exited unexpectedly')
+    call s:CloseBuffers()
+    return ''
   endif
   return 'ok'
 endfunc
@@ -223,16 +251,16 @@ func s:StartDebug_term(dict)
   execute s:vertical ? 'vnew' : 'new'
   let s:pty_job_id = termopen('tail -f /dev/null;#gdb program')
   if s:pty_job_id == 0
-    echoerr 'invalid argument (or job table is full) while opening terminal window'
+    call s:Echoerr('Invalid argument (or job table is full) while opening terminal window')
     return
   elseif s:pty_job_id == -1
-    echoerr 'Failed to open the program terminal window'
+    call s:Echoerr('Failed to open the program terminal window')
     return
   endif
   let pty_job_info = nvim_get_chan_info(s:pty_job_id)
   let s:ptybuf = pty_job_info['buffer']
   let pty = pty_job_info['pty']
-  let s:ptywin = win_getid(winnr())
+  let s:ptywin = win_getid()
   if s:vertical
     " Assuming the source code window will get a signcolumn, use two more
     " columns for that, thus one less for the terminal window.
@@ -250,11 +278,11 @@ func s:StartDebug_term(dict)
         \ })
   " hide terminal buffer
   if s:comm_job_id == 0
-    echoerr 'invalid argument (or job table is full) while opening communication terminal window'
+    call s:Echoerr('Invalid argument (or job table is full) while opening communication terminal window')
     exe 'bwipe! ' . s:ptybuf
     return
   elseif s:comm_job_id == -1
-    echoerr 'Failed to open the communication terminal window'
+    call s:Echoerr('Failed to open the communication terminal window')
     exe 'bwipe! ' . s:ptybuf
     return
   endif
@@ -295,19 +323,19 @@ func s:StartDebug_term(dict)
   " call ch_log('executing "' . join(gdb_cmd) . '"')
   let s:gdb_job_id = termopen(gdb_cmd, {'on_exit': function('s:EndTermDebug')})
   if s:gdb_job_id == 0
-    echoerr 'invalid argument (or job table is full) while opening gdb terminal window'
+    call s:Echoerr('Invalid argument (or job table is full) while opening gdb terminal window')
     exe 'bwipe! ' . s:ptybuf
     return
   elseif s:gdb_job_id == -1
-    echoerr 'Failed to open the gdb terminal window'
+    call s:Echoerr('Failed to open the gdb terminal window')
     call s:CloseBuffers()
     return
   endif
-  let s:running = v:true
+  let s:gdb_running = v:true
   let s:starting = v:true
   let gdb_job_info = nvim_get_chan_info(s:gdb_job_id)
   let s:gdbbuf = gdb_job_info['buffer']
-  let s:gdbwin = win_getid(winnr())
+  let s:gdbwin = win_getid()
 
   " Wait for the "startupdone" message before sending any commands.
   let try_count = 0
@@ -355,7 +383,7 @@ func s:StartDebug_term(dict)
         " response can be in the same line or the next line
         let response = line1 . line2
         if response =~ 'Undefined command'
-          echoerr 'Sorry, your gdb is too old, gdb 7.12 is required'
+          call s:Echoerr('Sorry, your gdb is too old, gdb 7.12 is required')
           " CHECKME: possibly send a "server show version" here
           call s:CloseBuffers()
           return
@@ -374,7 +402,7 @@ func s:StartDebug_term(dict)
     endif
     let try_count += 1
     if try_count > 100
-      echoerr 'Cannot check if your gdb works, continuing anyway'
+      call s:Echoerr('Cannot check if your gdb works, continuing anyway')
       break
     endif
     sleep 10m
@@ -395,7 +423,7 @@ func s:StartDebug_prompt(dict)
   else
     new
   endif
-  let s:gdbwin = win_getid(winnr())
+  let s:gdbwin = win_getid()
   let s:promptbuf = bufnr('')
   call prompt_setprompt(s:promptbuf, 'gdb> ')
   set buftype=prompt
@@ -429,18 +457,19 @@ func s:StartDebug_prompt(dict)
 
   " call ch_log('executing "' . join(gdb_cmd) . '"')
   let s:gdbjob = jobstart(gdb_cmd, {
-    \ 'on_exit': function('s:EndPromptDebug'),
-    \ 'on_stdout': function('s:JobOutCallback', {'last_line': '', 'real_cb': function('s:GdbOutCallback')}),
-    \ })
+        \ 'on_exit': function('s:EndPromptDebug'),
+        \ 'on_stdout': function('s:JobOutCallback', {'last_line': '', 'real_cb': function('s:GdbOutCallback')}),
+        \ })
   if s:gdbjob == 0
-    echoerr 'invalid argument (or job table is full) while starting gdb job'
+    call s:Echoerr('Invalid argument (or job table is full) while starting gdb job')
     exe 'bwipe! ' . s:ptybuf
     return
   elseif s:gdbjob == -1
-    echoerr 'Failed to start the gdb job'
+    call s:Echoerr('Failed to start the gdb job')
     call s:CloseBuffers()
     return
   endif
+  exe $'au BufUnload <buffer={s:promptbuf}> ++once call jobstop(s:gdbjob)'
 
   let s:ptybuf = 0
   if has('win32')
@@ -449,20 +478,19 @@ func s:StartDebug_prompt(dict)
   else
     " Unix: Run the debugged program in a terminal window.  Open it below the
     " gdb window.
-    execute 'new'
-    wincmd x | wincmd j
-    belowright let s:pty_job_id = termopen('tail -f /dev/null;#gdb program')
+    belowright new
+    let s:pty_job_id = termopen('tail -f /dev/null;#gdb program')
     if s:pty_job_id == 0
-      echoerr 'invalid argument (or job table is full) while opening terminal window'
+      call s:Echoerr('Invalid argument (or job table is full) while opening terminal window')
       return
     elseif s:pty_job_id == -1
-      echoerr 'Failed to open the program terminal window'
+      call s:Echoerr('Failed to open the program terminal window')
       return
     endif
     let pty_job_info = nvim_get_chan_info(s:pty_job_id)
     let s:ptybuf = pty_job_info['buffer']
     let pty = pty_job_info['pty']
-    let s:ptywin = win_getid(winnr())
+    let s:ptywin = win_getid()
     call s:SendCommand('tty ' . pty)
 
     " Since GDB runs in a prompt window, the environment has not been set to
@@ -585,12 +613,12 @@ func s:PromptInterrupt()
     " Using job_stop() does not work on MS-Windows, need to send SIGTRAP to
     " the debugger program so that gdb responds again.
     if s:pid == 0
-      echoerr 'Cannot interrupt gdb, did not find a process ID'
+      call s:Echoerr('Cannot interrupt gdb, did not find a process ID')
     else
       call debugbreak(s:pid)
     endif
   else
-    call jobstop(s:gdbjob)
+    call v:lua.vim.uv.kill(jobpid(s:gdbjob), 'sigint')
   endif
 endfunc
 
@@ -615,33 +643,39 @@ endfunc
 func s:GdbOutCallback(job_id, msgs, event)
   "call ch_log('received from gdb: ' . a:text)
 
-  " Drop the gdb prompt, we have our own.
-  " Drop status and echo'd commands.
-  call filter(a:msgs, { index, val ->
-        \ val !=# '(gdb)' && val !=# '^done' && val[0] !=# '&'})
-
+  let comm_msgs = []
   let lines = []
-  let index = 0
 
   for msg in a:msgs
+    " Disassembly messages need to be forwarded as-is.
+    if s:parsing_disasm_msg || msg =~ '^&"disassemble'
+      call s:CommOutput(a:job_id, [msg], a:event)
+      continue
+    endif
+
+    " Drop the gdb prompt, we have our own.
+    " Drop status and echo'd commands.
+    if msg == '(gdb) ' || msg == '^done' || msg[0] == '&'
+      continue
+    endif
+
     if msg =~ '^\^error,msg='
       if exists('s:evalexpr')
-            \ && s:DecodeMessage(msg[11:])
+            \ && s:DecodeMessage(msg[11:], v:false)
             \    =~ 'A syntax error in expression, near\|No symbol .* in current context'
         " Silently drop evaluation errors.
-        call remove(a:msgs, index)
         unlet s:evalexpr
         continue
       endif
     elseif msg[0] == '~'
-      call add(lines, s:DecodeMessage(msg[1:]))
-      call remove(a:msgs, index)
+      call add(lines, s:DecodeMessage(msg[1:], v:false))
       continue
     endif
-    let index += 1
+
+    call add(comm_msgs, msg)
   endfor
 
-  let curwinid = win_getid(winnr())
+  let curwinid = win_getid()
   call win_gotoid(s:gdbwin)
 
   " Add the output above the current prompt.
@@ -653,35 +687,43 @@ func s:GdbOutCallback(job_id, msgs, event)
   endif
 
   call win_gotoid(curwinid)
-  call s:CommOutput(a:job_id, a:msgs, a:event)
+  call s:CommOutput(a:job_id, comm_msgs, a:event)
 endfunc
 
-" Decode a message from gdb.  quotedText starts with a ", return the text up
-" to the next ", unescaping characters:
-" - remove line breaks
-" - change \\t to \t
+" Decode a message from gdb.  "quotedText" starts with a ", return the text up
+" to the next unescaped ", unescaping characters:
+" - remove line breaks (unless "literal" is v:true)
+" - change \" to "
+" - change \\t to \t (unless "literal" is v:true)
 " - change \0xhh to \xhh (disabled for now)
 " - change \ooo to octal
 " - change \\ to \
-func s:DecodeMessage(quotedText)
+func s:DecodeMessage(quotedText, literal)
   if a:quotedText[0] != '"'
-    echoerr 'DecodeMessage(): missing quote in ' . a:quotedText
+    call s:Echoerr('DecodeMessage(): missing quote in ' . a:quotedText)
     return
   endif
-  return a:quotedText
-        \ ->substitute('^"\|".*\|\\n', '', 'g')
-        \ ->substitute('\\t', "\t", 'g')
-        " multi-byte characters arrive in octal form
-        " NULL-values must be kept encoded as those break the string otherwise
+  let msg = a:quotedText
+        \ ->substitute('^"\|[^\\]\zs".*', '', 'g')
+        \ ->substitute('\\"', '"', 'g')
+        "\ multi-byte characters arrive in octal form
+        "\ NULL-values must be kept encoded as those break the string otherwise
         \ ->substitute('\\000', s:NullRepl, 'g')
         \ ->substitute('\\\o\o\o', {-> eval('"' .. submatch(0) .. '"')}, 'g')
-        " Note: GDB docs also mention hex encodings - the translations below work
-        "       but we keep them out for performance-reasons until we actually see
-        "       those in mi-returns
-        " \ ->substitute('\\0x\(\x\x\)', {-> eval('"\x' .. submatch(1) .. '"')}, 'g')
-        " \ ->substitute('\\0x00', s:NullRepl, 'g')
+        "\ Note: GDB docs also mention hex encodings - the translations below work
+        "\       but we keep them out for performance-reasons until we actually see
+        "\       those in mi-returns
+        "\ \ ->substitute('\\0x\(\x\x\)', {-> eval('"\x' .. submatch(1) .. '"')}, 'g')
+        "\ \ ->substitute('\\0x00', s:NullRepl, 'g')
         \ ->substitute('\\\\', '\', 'g')
         \ ->substitute(s:NullRepl, '\\000', 'g')
+  if !a:literal
+    return msg
+        \ ->substitute('\\t', "\t", 'g')
+        \ ->substitute('\\n', '', 'g')
+  else
+    return msg
+  endif
 endfunc
 const s:NullRepl = 'XXXNULLXXX'
 
@@ -690,7 +732,7 @@ func s:GetFullname(msg)
   if a:msg !~ 'fullname'
     return ''
   endif
-  let name = s:DecodeMessage(substitute(a:msg, '.*fullname=', '', ''))
+  let name = s:DecodeMessage(substitute(a:msg, '.*fullname=', '', ''), v:true)
   if has('win32') && name =~ ':\\\\'
     " sometimes the name arrives double-escaped
     let name = substitute(name, '\\\\', '\\', 'g')
@@ -703,12 +745,12 @@ func s:GetAsmAddr(msg)
   if a:msg !~ 'addr='
     return ''
   endif
-  let addr = s:DecodeMessage(substitute(a:msg, '.*addr=', '', ''))
+  let addr = s:DecodeMessage(substitute(a:msg, '.*addr=', '', ''), v:false)
   return addr
 endfunc
 
-function s:EndTermDebug(job_id, exit_code, event)
-  let s:running = v:false
+func s:EndTermDebug(job_id, exit_code, event)
+  let s:gdb_running = v:false
   if s:starting
     return
   endif
@@ -718,16 +760,22 @@ function s:EndTermDebug(job_id, exit_code, event)
   endif
 
   unlet s:gdbwin
-
   call s:EndDebugCommon()
 endfunc
 
 func s:EndDebugCommon()
-  let curwinid = win_getid(winnr())
+  let curwinid = win_getid()
 
   if exists('s:ptybuf') && s:ptybuf
     exe 'bwipe! ' . s:ptybuf
   endif
+  if s:asmbuf > 0 && bufexists(s:asmbuf)
+    exe 'bwipe! ' . s:asmbuf
+  endif
+  if s:varbuf > 0 && bufexists(s:varbuf)
+    exe 'bwipe! ' . s:varbuf
+  endif
+  let s:running = 0
 
   " Restore 'signcolumn' in all buffers for which it was set.
   call win_gotoid(s:sourcewin)
@@ -765,11 +813,8 @@ func s:EndPromptDebug(job_id, exit_code, event)
     doauto <nomodeline> User TermdebugStopPre
   endif
 
-  let curwinid = win_getid(winnr())
-  call win_gotoid(s:gdbwin)
-  close
-  if curwinid != s:gdbwin
-    call win_gotoid(curwinid)
+  if bufexists(s:promptbuf)
+    exe 'bwipe! ' . s:promptbuf
   endif
 
   call s:EndDebugCommon()
@@ -777,7 +822,6 @@ func s:EndPromptDebug(job_id, exit_code, event)
   "call ch_log("Returning from EndPromptDebug()")
 endfunc
 
-" - CommOutput: disassemble $pc
 " - CommOutput: &"disassemble $pc\n"
 " - CommOutput: ~"Dump of assembler code for function main(int, char**):\n"
 " - CommOutput: ~"   0x0000555556466f69 <+0>:\tpush   rbp\n"
@@ -787,15 +831,14 @@ endfunc
 " - CommOutput: ~"End of assembler dump.\n"
 " - CommOutput: ^done
 
-" - CommOutput: disassemble $pc
 " - CommOutput: &"disassemble $pc\n"
 " - CommOutput: &"No function contains specified address.\n"
 " - CommOutput: ^error,msg="No function contains specified address."
 func s:HandleDisasmMsg(msg)
   if a:msg =~ '^\^done'
-    let curwinid = win_getid(winnr())
+    let curwinid = win_getid()
     if win_gotoid(s:asmwin)
-      silent normal! gg0"_dG
+      silent! %delete _
       call setline(1, s:asm_lines)
       set nomodified
       set filetype=asm
@@ -819,15 +862,17 @@ func s:HandleDisasmMsg(msg)
       call s:SendCommand('disassemble $pc,+100')
     endif
     let s:parsing_disasm_msg = 0
-  elseif a:msg =~ '\&\"disassemble \$pc'
+  elseif a:msg =~ '^&"disassemble \$pc'
     if a:msg =~ '+100'
       " This is our second disasm attempt
       let s:parsing_disasm_msg = 2
     endif
-  else
+  elseif a:msg !~ '^&"disassemble'
     let value = substitute(a:msg, '^\~\"[ ]*', '', '')
     let value = substitute(value, '^=>[ ]*', '', '')
-    let value = substitute(value, '\\n\"\r$', '', '')
+    " Nvim already trims the final "\r" in s:CommOutput()
+    " let value = substitute(value, '\\n\"\r$', '', '')
+    let value = substitute(value, '\\n\"$', '', '')
     let value = substitute(value, '\r', '', '')
     let value = substitute(value, '\\t', ' ', 'g')
 
@@ -837,12 +882,56 @@ func s:HandleDisasmMsg(msg)
   endif
 endfunc
 
-func s:CommOutput(job_id, msgs, event)
+func s:ParseVarinfo(varinfo)
+  let dict = {}
+  let nameIdx = matchstrpos(a:varinfo, '{name="\([^"]*\)"')
+  let dict['name'] = a:varinfo[nameIdx[1] + 7 : nameIdx[2] - 2]
+  let typeIdx = matchstrpos(a:varinfo, ',type="\([^"]*\)"')
+  " 'type' maybe is a url-like string,
+  " try to shorten it and show only the /tail
+  let dict['type'] = (a:varinfo[typeIdx[1] + 7 : typeIdx[2] - 2])->fnamemodify(':t')
+  let valueIdx = matchstrpos(a:varinfo, ',value="\(.*\)"}')
+  if valueIdx[1] == -1
+    let dict['value'] = 'Complex value'
+  else
+    let dict['value'] = a:varinfo[valueIdx[1] + 8 : valueIdx[2] - 3]
+  endif
+  return dict
+endfunc
 
+func s:HandleVariablesMsg(msg)
+  let curwinid = win_getid()
+  if win_gotoid(s:varwin)
+
+    silent! %delete _
+    let spaceBuffer = 20
+    call setline(1, 'Type' .
+          \ repeat(' ', 16) .
+          \ 'Name' .
+          \ repeat(' ', 16) .
+          \ 'Value')
+    let cnt = 1
+    let capture = '{name=".\{-}",\%(arg=".\{-}",\)\{0,1\}type=".\{-}"\%(,value=".\{-}"\)\{0,1\}}'
+    let varinfo = matchstr(a:msg, capture, 0, cnt)
+    while varinfo != ''
+      let vardict = s:ParseVarinfo(varinfo)
+      call setline(cnt + 1, vardict['type'] .
+            \ repeat(' ', max([20 - len(vardict['type']), 1])) .
+            \ vardict['name'] .
+            \ repeat(' ', max([20 - len(vardict['name']), 1])) .
+            \ vardict['value'])
+      let cnt += 1
+      let varinfo = matchstr(a:msg, capture, 0, cnt)
+    endwhile
+  endif
+  call win_gotoid(curwinid)
+endfunc
+
+func s:CommOutput(job_id, msgs, event)
   for msg in a:msgs
-    " remove prefixed NL
-    if msg[0] == "\n"
-      let msg = msg[1:]
+    " Nvim job lines are split on "\n", so trim a suffixed CR.
+    if msg[-1:] == "\r"
+      let msg = msg[:-2]
     endif
 
     if s:parsing_disasm_msg
@@ -862,9 +951,12 @@ func s:CommOutput(job_id, msgs, event)
         call s:HandleEvaluate(msg)
       elseif msg =~ '^\^error,msg='
         call s:HandleError(msg)
-      elseif msg =~ '^disassemble'
+      elseif msg =~ '^&"disassemble'
         let s:parsing_disasm_msg = 1
         let s:asm_lines = []
+        call s:HandleDisasmMsg(msg)
+      elseif msg =~ '^\^done,variables='
+        call s:HandleVariablesMsg(msg)
       endif
     endif
   endfor
@@ -886,6 +978,7 @@ func s:InstallCommands()
   set cpo&vim
 
   command -nargs=? Break call s:SetBreakpoint(<q-args>)
+  command -nargs=? Tbreak call s:SetBreakpoint(<q-args>, v:true)
   command Clear call s:ClearBreakpoint()
   command Step call s:SendResumingCommand('-exec-step')
   command Over call s:SendResumingCommand('-exec-next')
@@ -905,12 +998,17 @@ func s:InstallCommands()
     command Continue call chansend(s:gdb_job_id, "continue\r")
   endif
 
+  command -nargs=* Frame call s:Frame(<q-args>)
+  command -count=1 Up call s:Up(<count>)
+  command -count=1 Down call s:Down(<count>)
+
   command -range -nargs=* Evaluate call s:Evaluate(<range>, <q-args>)
   command Gdb call win_gotoid(s:gdbwin)
   command Program call s:GotoProgram()
   command Source call s:GotoSourcewinOrCreateIt()
   command Asm call s:GotoAsmwinOrCreateIt()
-  command Winbar call s:InstallWinbar()
+  command Var call s:GotoVariableswinOrCreateIt()
+  command Winbar call s:InstallWinbar(1)
 
   let map = 1
   if exists('g:termdebug_config')
@@ -919,26 +1017,37 @@ func s:InstallCommands()
     let map = g:termdebug_map_K
   endif
   if map
-    " let s:k_map_saved = maparg('K', 'n', 0, 1)
-    let s:k_map_saved = {}
-    for map in nvim_get_keymap('n')
-      if map.lhs ==# 'K'
-        let s:k_map_saved = map
-        break
-      endif
-    endfor
-    nnoremap K :Evaluate<CR>
+    let s:k_map_saved = maparg('K', 'n', 0, 1)
+    if !empty(s:k_map_saved) && !s:k_map_saved.buffer || empty(s:k_map_saved)
+      nnoremap K :Evaluate<CR>
+    endif
   endif
 
+  let map = 1
+  if exists('g:termdebug_config')
+    let map = get(g:termdebug_config, 'map_plus', 1)
+  endif
+  if map
+    let s:plus_map_saved = maparg('+', 'n', 0, 1)
+    if !empty(s:plus_map_saved) && !s:plus_map_saved.buffer || empty(s:plus_map_saved)
+      nnoremap <expr> + $'<Cmd>{v:count1}Up<CR>'
+    endif
+  endif
+
+  let map = 1
+  if exists('g:termdebug_config')
+    let map = get(g:termdebug_config, 'map_minus', 1)
+  endif
+  if map
+    let s:minus_map_saved = maparg('-', 'n', 0, 1)
+    if !empty(s:minus_map_saved) && !s:minus_map_saved.buffer || empty(s:minus_map_saved)
+      nnoremap <expr> - $'<Cmd>{v:count1}Down<CR>'
+    endif
+  endif
+
+
   if has('menu') && &mouse != ''
-    " install the window toolbar by default, can be disabled in the config
-    let winbar = 1
-    if exists('g:termdebug_config')
-      let winbar = get(g:termdebug_config, 'winbar', 1)
-    endif
-    if winbar
-      call s:InstallWinbar()
-    endif
+    call s:InstallWinbar(0)
 
     let popup = 1
     if exists('g:termdebug_config')
@@ -949,11 +1058,11 @@ func s:InstallCommands()
     if popup
       let s:saved_mousemodel = &mousemodel
       let &mousemodel = 'popup_setpos'
-      an 1.200 PopUp.-SEP3-	<Nop>
-      an 1.210 PopUp.Set\ breakpoint	:Break<CR>
-      an 1.220 PopUp.Clear\ breakpoint	:Clear<CR>
-      an 1.230 PopUp.Run\ until		:Until<CR>
-      an 1.240 PopUp.Evaluate		:Evaluate<CR>
+      an 1.200 PopUp.-SEP3-     <Nop>
+      an 1.210 PopUp.Set\ breakpoint    :Break<CR>
+      an 1.220 PopUp.Clear\ breakpoint  :Clear<CR>
+      an 1.230 PopUp.Run\ until         :Until<CR>
+      an 1.240 PopUp.Evaluate           :Evaluate<CR>
     endif
   endif
 
@@ -963,7 +1072,7 @@ endfunc
 " let s:winbar_winids = []
 
 " Install the window toolbar in the current window.
-func s:InstallWinbar()
+func s:InstallWinbar(force)
   " if has('menu') && &mouse != ''
   "   nnoremenu WinBar.Step   :Step<CR>
   "   nnoremenu WinBar.Next   :Over<CR>
@@ -971,13 +1080,14 @@ func s:InstallWinbar()
   "   nnoremenu WinBar.Cont   :Continue<CR>
   "   nnoremenu WinBar.Stop   :Stop<CR>
   "   nnoremenu WinBar.Eval   :Evaluate<CR>
-  "   call add(s:winbar_winids, win_getid(winnr()))
+  "   call add(s:winbar_winids, win_getid())
   " endif
 endfunc
 
 " Delete installed debugger commands in the current window.
 func s:DeleteCommands()
   delcommand Break
+  delcommand Tbreak
   delcommand Clear
   delcommand Step
   delcommand Over
@@ -987,26 +1097,48 @@ func s:DeleteCommands()
   delcommand Arguments
   delcommand Stop
   delcommand Continue
+  delcommand Frame
+  delcommand Up
+  delcommand Down
   delcommand Evaluate
   delcommand Gdb
   delcommand Program
   delcommand Source
   delcommand Asm
+  delcommand Var
   delcommand Winbar
 
   if exists('s:k_map_saved')
-    if empty(s:k_map_saved)
+    if !empty(s:k_map_saved) && !s:k_map_saved.buffer
       nunmap K
-    else
-      " call mapset(s:k_map_saved)
-      call mapset('n', 0, s:k_map_saved)
+      call mapset(s:k_map_saved)
+    elseif empty(s:k_map_saved)
+      nunmap K
     endif
     unlet s:k_map_saved
+  endif
+  if exists('s:plus_map_saved')
+    if !empty(s:plus_map_saved) && !s:plus_map_saved.buffer
+      nunmap +
+      call mapset(s:plus_map_saved)
+    elseif empty(s:plus_map_saved)
+      nunmap +
+    endif
+    unlet s:plus_map_saved
+  endif
+  if exists('s:minus_map_saved')
+    if !empty(s:minus_map_saved) && !s:minus_map_saved.buffer
+      nunmap -
+      call mapset(s:minus_map_saved)
+    elseif empty(s:minus_map_saved)
+      nunmap -
+    endif
+    unlet s:minus_map_saved
   endif
 
   if has('menu')
     " Remove the WinBar entries from all windows where it was added.
-    " let curwinid = win_getid(winnr())
+    " let curwinid = win_getid()
     " for winid in s:winbar_winids
     "   if win_gotoid(winid)
     "     aunmenu WinBar.Step
@@ -1056,7 +1188,7 @@ func s:Until(at)
 endfunc
 
 " :Break - Set a breakpoint at the cursor position.
-func s:SetBreakpoint(at)
+func s:SetBreakpoint(at, tbreak=v:false)
   " Setting a breakpoint may not work while the program is running.
   " Interrupt to make it work.
   let do_continue = 0
@@ -1068,8 +1200,13 @@ func s:SetBreakpoint(at)
 
   " Use the fname:lnum format, older gdb can't handle --source.
   let at = empty(a:at) ?
-  \ fnameescape(expand('%:p')) . ':' . line('.') : a:at
-  call s:SendCommand('-break-insert ' . at)
+        \ fnameescape(expand('%:p')) . ':' . line('.') : a:at
+  if a:tbreak
+    let cmd = '-break-insert -t ' . at
+  else
+    let cmd = '-break-insert ' . at
+  endif
+  call s:SendCommand(cmd)
   if do_continue
     Continue
   endif
@@ -1105,7 +1242,7 @@ func s:ClearBreakpoint()
       endif
       echomsg 'Breakpoint ' . id . ' cleared from line ' . lnum . '.'
     else
-      echoerr 'Internal error trying to remove breakpoint at line ' . lnum . '!'
+      call s:Echoerr('Internal error trying to remove breakpoint at line ' . lnum . '!')
     endif
   else
     echomsg 'No breakpoint to remove at line ' . lnum . '.'
@@ -1117,6 +1254,37 @@ func s:Run(args)
     call s:SendResumingCommand('-exec-arguments ' . a:args)
   endif
   call s:SendResumingCommand('-exec-run')
+endfunc
+
+" :Frame - go to a specific frame in the stack
+func s:Frame(arg)
+  " Note: we explicit do not use mi's command
+  " call s:SendCommand('-stack-select-frame "' . a:arg .'"')
+  " as we only get a "done" mi response and would have to open the file
+  " 'manually' - using cli command "frame" provides us with the mi response
+  " already parsed and allows for more formats
+  if a:arg =~ '^\d\+$' || a:arg == ''
+    " specify frame by number
+    call s:SendCommand('-interpreter-exec mi "frame ' . a:arg .'"')
+  elseif a:arg =~ '^0x[0-9a-fA-F]\+$'
+    " specify frame by stack address
+    call s:SendCommand('-interpreter-exec mi "frame address ' . a:arg .'"')
+  else
+    " specify frame by function name
+    call s:SendCommand('-interpreter-exec mi "frame function ' . a:arg .'"')
+  endif
+endfunc
+
+" :Up - go a:count frames in the stack "higher"
+func s:Up(count)
+  " the 'correct' one would be -stack-select-frame N, but we don't know N
+  call s:SendCommand($'-interpreter-exec console "up {a:count}"')
+endfunc
+
+" :Down - go a:count frames in the stack "below"
+func s:Down(count)
+  " the 'correct' one would be -stack-select-frame N, but we don't know N
+  call s:SendCommand($'-interpreter-exec console "down {a:count}"')
 endfunc
 
 func s:SendEval(expr)
@@ -1138,7 +1306,14 @@ endfunc
 
 " :Evaluate - evaluate what is specified / under the cursor
 func s:Evaluate(range, arg)
+  if s:eval_float_win_id > 0 && nvim_win_is_valid(s:eval_float_win_id)
+        \ && a:range == 0 && empty(a:arg)
+    call nvim_set_current_win(s:eval_float_win_id)
+    return
+  endif
   let expr = s:GetEvaluationExpression(a:range, a:arg)
+  let s:evalFromBalloonExpr = 1
+  let s:evalFromBalloonExprResult = ''
   let s:ignoreEvalError = 0
   call s:SendEval(expr)
 endfunc
@@ -1195,6 +1370,8 @@ let s:ignoreEvalError = 0
 let s:evalFromBalloonExpr = 0
 let s:evalFromBalloonExprResult = ''
 
+let s:eval_float_win_id = -1
+
 " Handle the result of data-evaluate-expression
 func s:HandleEvaluate(msg)
   let value = a:msg
@@ -1217,9 +1394,15 @@ func s:HandleEvaluate(msg)
     else
       let s:evalFromBalloonExprResult .= ' = ' . value
     endif
-    let s:evalFromBalloonExprResult = split(s:evalFromBalloonExprResult, '\\n')
-    call s:OpenHoverPreview(s:evalFromBalloonExprResult, v:null)
-    let s:evalFromBalloonExprResult = ''
+    " NEOVIM:
+    " - Result pretty-printing is not implemented. Vim prettifies the result
+    "   with balloon_split(), which is not ported to nvim.
+    " - Manually implement window focusing. Sometimes the result of pointer
+    "   evaluation arrives in two separate messages, one for the address
+    "   itself and the other for the value in that address. So with the stock
+    "   focus option, the second message will focus the window containing the
+    "   first message.
+    let s:eval_float_win_id = luaeval('select(2, vim.lsp.util.open_floating_preview(_A))', [s:evalFromBalloonExprResult])
   else
     echomsg '"' . s:evalexpr . '": ' . value
   endif
@@ -1228,131 +1411,8 @@ func s:HandleEvaluate(msg)
     " Looks like a pointer, also display what it points to.
     let s:ignoreEvalError = 1
     call s:SendEval('*' . s:evalexpr)
-  else
-    let s:evalFromBalloonExprResult = ''
   endif
 endfunc
-
-function! s:ShouldUseFloatWindow() abort
-  if exists('*nvim_open_win') && (get(g:, 'termdebug_useFloatingHover', 1) == 1)
-    return v:true
-  else
-    return v:false
-  endif
-endfunction
-
-function! s:CloseFloatingHoverOnCursorMove(win_id, opened) abort
-  if getpos('.') == a:opened
-    " Just after opening floating window, CursorMoved event is run.
-    " To avoid closing floating window immediately, check the cursor
-    " was really moved
-    return
-  endif
-  autocmd! nvim_termdebug_close_hover
-  let winnr = win_id2win(a:win_id)
-  if winnr == 0
-    return
-  endif
-  call nvim_win_close(a:win_id, v:true)
-endfunction
-
-function! s:CloseFloatingHoverOnBufEnter(win_id, bufnr) abort
-    let winnr = win_id2win(a:win_id)
-    if winnr == 0
-        " Float window was already closed
-        autocmd! nvim_termdebug_close_hover
-        return
-    endif
-    if winnr == winnr()
-        " Cursor is moving into floating window. Do not close it
-        return
-    endif
-    if bufnr('%') == a:bufnr
-        " When current buffer opened hover window, it's not another buffer. Skipped
-        return
-    endif
-    autocmd! nvim_termdebug_close_hover
-    call nvim_win_close(a:win_id, v:true)
-  endfunction
-
-" Open preview window. Window is open in:
-"   - Floating window on Neovim (0.4.0 or later)
-"   - Preview window on Neovim (0.3.0 or earlier) or Vim
-function! s:OpenHoverPreview(lines, filetype) abort
-    " Use local variable since parameter is not modifiable
-    let lines = a:lines
-    let bufnr = bufnr('%')
-
-    let use_float_win = s:ShouldUseFloatWindow()
-    if use_float_win
-      let pos = getpos('.')
-
-      " Calculate width and height
-      let width = 0
-      for index in range(len(lines))
-        let line = lines[index]
-        let lw = strdisplaywidth(line)
-        if lw > width
-          let width = lw
-        endif
-        let lines[index] = line
-      endfor
-
-      let height = len(lines)
-
-      " Calculate anchor
-      " Prefer North, but if there is no space, fallback into South
-      let bottom_line = line('w0') + winheight(0) - 1
-      if pos[1] + height <= bottom_line
-        let vert = 'N'
-        let row = 1
-      else
-        let vert = 'S'
-        let row = 0
-      endif
-
-      " Prefer West, but if there is no space, fallback into East
-      if pos[2] + width <= &columns
-        let hor = 'W'
-        let col = 0
-      else
-        let hor = 'E'
-        let col = 1
-      endif
-
-      let buf = nvim_create_buf(v:false, v:true)
-      call nvim_buf_set_lines(buf, 0, -1, v:true, lines)
-      " using v:true for second argument of nvim_open_win make the floating
-      " window disappear
-      let float_win_id = nvim_open_win(buf, v:false, {
-            \   'relative': 'cursor',
-            \   'anchor': vert . hor,
-            \   'row': row,
-            \   'col': col,
-            \   'width': width,
-            \   'height': height,
-            \   'style': 'minimal',
-            \ })
-
-      if a:filetype isnot v:null
-        call nvim_win_set_option(float_win_id, 'filetype', a:filetype)
-      endif
-
-      call nvim_buf_set_option(buf, 'modified', v:false)
-      call nvim_buf_set_option(buf, 'modifiable', v:false)
-
-      " Unlike preview window, :pclose does not close window. Instead, close
-      " hover window automatically when cursor is moved.
-      let call_after_move = printf('<SID>CloseFloatingHoverOnCursorMove(%d, %s)', float_win_id, string(pos))
-      let call_on_bufenter = printf('<SID>CloseFloatingHoverOnBufEnter(%d, %d)', float_win_id, bufnr)
-      augroup nvim_termdebug_close_hover
-        execute 'autocmd CursorMoved,CursorMovedI,InsertEnter <buffer> call ' . call_after_move
-        execute 'autocmd BufEnter * call ' . call_on_bufenter
-      augroup END
-    else
-      echomsg a:lines[0]
-    endif
-endfunction
 
 " Handle an error.
 func s:HandleError(msg)
@@ -1363,14 +1423,14 @@ func s:HandleError(msg)
     return
   endif
   let msgVal = substitute(a:msg, '.*msg="\(.*\)"', '\1', '')
-  echoerr substitute(msgVal, '\\"', '"', 'g')
+  call s:Echoerr(substitute(msgVal, '\\"', '"', 'g'))
 endfunc
 
 func s:GotoSourcewinOrCreateIt()
   if !win_gotoid(s:sourcewin)
     new
-    let s:sourcewin = win_getid(winnr())
-    call s:InstallWinbar()
+    let s:sourcewin = win_getid()
+    call s:InstallWinbar(0)
   endif
 endfunc
 
@@ -1396,28 +1456,37 @@ endfunc
 
 func s:GotoAsmwinOrCreateIt()
   if !win_gotoid(s:asmwin)
+    let mdf = ''
     if win_gotoid(s:sourcewin)
-      exe 'rightbelow new'
+      " 60 is approx spaceBuffer * 3
+      if winwidth(0) > (78 + 60)
+        let mdf = 'vert'
+        exe mdf .. ' ' .. 60 .. 'new'
+      else
+        exe 'rightbelow new'
+      endif
     else
       exe 'new'
     endif
 
-    let s:asmwin = win_getid(winnr())
+    let s:asmwin = win_getid()
 
     setlocal nowrap
     setlocal number
     setlocal noswapfile
     setlocal buftype=nofile
+    setlocal bufhidden=wipe
+    setlocal signcolumn=no
     setlocal modifiable
 
-    let asmbuf = bufnr('Termdebug-asm-listing')
-    if asmbuf > 0
-      exe 'buffer' . asmbuf
+    if s:asmbuf > 0 && bufexists(s:asmbuf)
+      exe 'buffer' . s:asmbuf
     else
-      exe 'file Termdebug-asm-listing'
+      silent file Termdebug-asm-listing
+      let s:asmbuf = bufnr('Termdebug-asm-listing')
     endif
 
-    if s:GetDisasmWindowHeight() > 0
+    if mdf != 'vert' && s:GetDisasmWindowHeight() > 0
       exe 'resize ' .. s:GetDisasmWindowHeight()
     endif
   endif
@@ -1435,17 +1504,82 @@ func s:GotoAsmwinOrCreateIt()
   endif
 endfunc
 
+func s:GetVariablesWindow()
+  if exists('g:termdebug_config')
+    return get(g:termdebug_config, 'variables_window', 0)
+  endif
+  if exists('g:termdebug_disasm_window')
+    return g:termdebug_variables_window
+  endif
+  return 0
+endfunc
+
+func s:GetVariablesWindowHeight()
+  if exists('g:termdebug_config')
+    return get(g:termdebug_config, 'variables_window_height', 0)
+  endif
+  if exists('g:termdebug_variables_window') && g:termdebug_variables_window > 1
+    return g:termdebug_variables_window
+  endif
+  return 0
+endfunc
+
+func s:GotoVariableswinOrCreateIt()
+  if !win_gotoid(s:varwin)
+    let mdf = ''
+    if win_gotoid(s:sourcewin)
+      " 60 is approx spaceBuffer * 3
+      if winwidth(0) > (78 + 60)
+        let mdf = 'vert'
+        exe mdf .. ' ' .. 60 .. 'new'
+      else
+        exe 'rightbelow new'
+      endif
+    else
+      exe 'new'
+    endif
+
+    let s:varwin = win_getid()
+
+    setlocal nowrap
+    setlocal noswapfile
+    setlocal buftype=nofile
+    setlocal bufhidden=wipe
+    setlocal signcolumn=no
+    setlocal modifiable
+
+    if s:varbuf > 0 && bufexists(s:varbuf)
+      exe 'buffer' . s:varbuf
+    else
+      silent file Termdebug-variables-listing
+      let s:varbuf = bufnr('Termdebug-variables-listing')
+    endif
+
+    if mdf != 'vert' && s:GetVariablesWindowHeight() > 0
+      exe 'resize ' .. s:GetVariablesWindowHeight()
+    endif
+  endif
+
+  if s:running
+    call s:SendCommand('-stack-list-variables 2')
+  endif
+endfunc
+
 " Handle stopping and running message from gdb.
 " Will update the sign that shows the current position.
 func s:HandleCursor(msg)
-  let wid = win_getid(winnr())
+  let wid = win_getid()
 
   if a:msg =~ '^\*stopped'
     "call ch_log('program stopped')
     let s:stopped = 1
+    if a:msg =~ '^\*stopped,reason="exited-normally"'
+      let s:running = 0
+    endif
   elseif a:msg =~ '^\*running'
     "call ch_log('program running')
     let s:stopped = 0
+    let s:running = 1
   endif
 
   if a:msg =~ 'fullname='
@@ -1459,19 +1593,23 @@ func s:HandleCursor(msg)
     if asm_addr != ''
       let s:asm_addr = asm_addr
 
-      let curwinid = win_getid(winnr())
+      let curwinid = win_getid()
       if win_gotoid(s:asmwin)
-      let lnum = search('^' . s:asm_addr)
-      if lnum == 0
-        call s:SendCommand('disassemble $pc')
-      else
-        call sign_unplace('TermDebug', #{id: s:asm_id})
-        call sign_place(s:asm_id, 'TermDebug', 'debugPC', '%', #{lnum: lnum})
-      endif
+        let lnum = search('^' . s:asm_addr)
+        if lnum == 0
+          call s:SendCommand('disassemble $pc')
+        else
+          call sign_unplace('TermDebug', #{id: s:asm_id})
+          call sign_place(s:asm_id, 'TermDebug', 'debugPC', '%', #{lnum: lnum})
+        endif
 
-      call win_gotoid(curwinid)
+        call win_gotoid(curwinid)
       endif
     endif
+  endif
+
+  if s:running && s:stopped && bufwinnr('Termdebug-variables-listing') != -1
+    call s:SendCommand('-stack-list-variables 2')
   endif
 
   if a:msg =~ '^\(\*stopped\|=thread-selected\)' && filereadable(fname)
@@ -1485,15 +1623,15 @@ func s:HandleCursor(msg)
           " prompt, since it is unlikely we want to edit the file.
           " The file may be changed but not saved, warn for that.
           au SwapExists * echohl WarningMsg
-                \ | echo 'Warning: file is being edited elsewhere'
-                \ | echohl None
-                \ | let v:swapchoice = 'o'
+          \ | echo 'Warning: file is being edited elsewhere'
+          \ | echohl None
+          \ | let v:swapchoice = 'o'
         augroup END
         if &modified
           " TODO: find existing window
           exe 'split ' . fnameescape(fname)
-          let s:sourcewin = win_getid(winnr())
-          call s:InstallWinbar()
+          let s:sourcewin = win_getid()
+          call s:InstallWinbar(0)
         else
           exe 'edit ' . fnameescape(fname)
         endif
@@ -1530,8 +1668,18 @@ func s:CreateBreakpoint(id, subid, enabled)
     else
       let hiName = "debugBreakpoint"
     endif
+    let label = ''
+    if exists('g:termdebug_config')
+      let label = get(g:termdebug_config, 'sign', '')
+    endif
+    if label == ''
+      let label = printf('%02X', a:id)
+      if a:id > 255
+        let label = 'F+'
+      endif
+    endif
     call sign_define('debugBreakpoint' .. nr,
-          \ #{text: substitute(nr, '\..*', '', ''),
+          \ #{text: slice(label, 0, 2),
           \ texthl: hiName})
   endif
 endfunc
@@ -1671,5 +1819,10 @@ func s:BufUnloaded()
   endfor
 endfunc
 
+call s:InitHighlight()
+call s:InitAutocmd()
+
 let &cpo = s:keepcpo
 unlet s:keepcpo
+
+" vim: sw=2 sts=2 et

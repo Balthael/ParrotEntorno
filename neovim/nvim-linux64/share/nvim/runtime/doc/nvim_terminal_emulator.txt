@@ -126,6 +126,46 @@ color index is just forwarded.
 Editor highlighting (|syntax-highlighting|, |highlight-groups|, etc.) has
 higher precedence: it is applied after terminal colors are resolved.
 
+------------------------------------------------------------------------------
+EVENTS						*terminal-events*
+
+Applications running in a :terminal buffer can send requests, which Nvim
+exposes via the |TermRequest| event.
+
+OSC 7: change working directory			*terminal-osc7*
+
+To handle OSC 7 emitted from :terminal processes, this code will :cd to the
+directory indicated in the request. >lua
+
+  vim.api.nvim_create_autocmd({ 'TermRequest' }, {
+    desc = 'Handles OSC 7 dir change requests',
+    callback = function(ev)
+      if string.sub(vim.v.termrequest, 1, 4) == '\x1b]7;' then
+        local dir = string.gsub(vim.v.termrequest, '\x1b]7;file://[^/]*', '')
+        if vim.fn.isdirectory(dir) == 0 then
+          vim.notify('invalid dir: '..dir)
+          return
+        end
+        vim.api.nvim_buf_set_var(ev.buf, 'osc7_dir', dir)
+        if vim.o.autochdir and vim.api.nvim_get_current_buf() == ev.buf then
+          vim.cmd.cd(dir)
+        end
+      end
+    end
+  })
+  vim.api.nvim_create_autocmd({ 'BufEnter', 'WinEnter', 'DirChanged' }, {
+    callback = function(ev)
+      if vim.b.osc7_dir and vim.fn.isdirectory(vim.b.osc7_dir) == 1 then
+        vim.cmd.cd(vim.b.osc7_dir)
+      end
+    end
+  })
+
+To try it out, select the above code and source it with `:'<,'>lua`, then run
+this command in a :terminal buffer: >
+
+   printf "\033]7;file://./foo/bar\033\\"
+
 ==============================================================================
 Status Variables				*terminal-status*
 
@@ -140,9 +180,9 @@ Example: >vim
 - |'channel'|  Terminal PTY |job-id|.  Can be used with |chansend()| to send
   input to the terminal.
 - The |TermClose| event gives the terminal job exit code in the |v:event|
-  "status" field. For example, this autocmd closes terminal buffers if the job
-  exited without error: >vim
-    autocmd TermClose * if !v:event.status | exe 'bdelete! '..expand('<abuf>') | endif
+  "status" field. For example, this autocommand outputs the terminal's exit
+  code to |:messages|: >vim
+    autocmd TermClose * echom 'Terminal exited with status '..v:event.status
 
 Use |jobwait()| to check if the terminal job has finished: >vim
     let running = jobwait([&channel], 0)[0] == -1
@@ -240,7 +280,7 @@ gdb window and use a "print" command, e.g.: >
 If mouse pointer movements are working, Vim will also show a balloon when the
 mouse rests on text that can be evaluated by gdb.
 You can also use the "K" mapping that will either use Nvim floating windows
-if available to show the results or print below the status bar.
+to show the results.
 
 Now go back to the source window and put the cursor on the first line after
 the for loop, then type: >
@@ -283,8 +323,13 @@ gdb:
  `:Run` [args]	    run the program with [args] or the previous arguments
  `:Arguments` {args}  set arguments for the next `:Run`
 
- *:Break*	set a breakpoint at the current line; a sign will be displayed
- *:Clear*	delete the breakpoint at the current line
+ *:Break*	set a breakpoint at the cursor position
+ :Break {position}
+		set a breakpoint at the specified position
+ *:Tbreak*	set a temporary breakpoint at the cursor position
+ :Tbreak {position}
+		set a temporary breakpoint at the specified position
+ *:Clear*	delete the breakpoint at the cursor position
 
  *:Step*	execute the gdb "step" command
  *:Over*	execute the gdb "next" command (`:Next` is a Vim command)
@@ -315,6 +360,20 @@ Inspecting variables ~
 
 This is similar to using "print" in the gdb window.
 You can usually shorten `:Evaluate` to `:Ev`.
+The result is displayed in a floating window.
+You can move the cursor to this window by running `:Evaluate` (or `K`) again.
+
+
+Navigating stack frames ~
+				*termdebug-frames* *:Frame* *:Up* *:Down*
+ `:Frame` [frame]	select frame [frame], which is a frame number,
+			address, or function name (default: current frame)
+ `:Up` [count]		go up [count] frames (default: 1; the frame that
+			called the current)
+ `+`			same (see |termdebug_map_plus| to disable)
+ `:Down` [count]	go down [count] frames (default: 1; the frame called
+			by the current)
+ `-`			same (see |termdebug_map_minus| to disable)
 
 
 Other commands ~
@@ -325,7 +384,9 @@ Other commands ~
 	     isn't one
  *:Asm*	     jump to the window with the disassembly, create it if there
 	     isn't one
-
+ *:Var*	     jump to the window with the local and argument variables,
+	     create it if there isn't one. This window updates whenever the
+	     program is stopped
 
 Events ~
 							*termdebug-events*
@@ -385,20 +446,48 @@ Prompt mode can be used with: >vim
 If there is no g:termdebug_config you can use: >vim
 	let g:termdebug_use_prompt = 1
 <
-						*termdebug_map_K*
-The K key is normally mapped to :Evaluate. If you do not want this use: >vim
+Mappings ~
+					*termdebug_map_K* *termdebug-mappings*
+The K key is normally mapped to |:Evaluate| unless a buffer local (|:map-local|)
+mapping to K already exists.  If you do not want this use: >vim
 	let g:termdebug_config['map_K'] = 0
 If there is no g:termdebug_config you can use: >vim
 	let g:termdebug_map_K = 0
 <
+						*termdebug_map_minus*
+The - key is normally mapped to |:Down| unless a buffer local mapping to the -
+key already exists.  If you do not want this use: >vim
+	let g:termdebug_config['map_minus'] = 0
+<
+						*termdebug_map_plus*
+The + key is normally mapped to |:Up| unless a buffer local mapping to the +
+key already exists.  If you do not want this use: >vim
+	let g:termdebug_config['map_plus'] = 0
+<
 						*termdebug_disasm_window*
-If you want the Asm window shown by default, set the flag to 1.
-the "disasm_window_height" entry can be used to set the window height: >vim
+If you want the Asm window shown by default, set the "disasm_window" flag to
+1.  The "disasm_window_height" entry can be used to set the window height: >vim
 	let g:termdebug_config['disasm_window'] = 1
 	let g:termdebug_config['disasm_window_height'] = 15
 If there is no g:termdebug_config you can use: >vim
 	let g:termdebug_disasm_window = 15
 Any value greater than 1 will set the Asm window height to that value.
+If the current window has enough horizontal space, it will be vertically split
+and the Asm window will be shown side by side with the source code window (and
+the height option won't be used).
+
+						*termdebug_variables_window*
+If you want the Var window shown by default, set the "variables_window" flag
+to 1.  The "variables_window_height" entry can be used to set the window
+height: >vim
+	let g:termdebug_config['variables_window'] = 1
+	let g:termdebug_config['variables_window_height'] = 15
+If there is no g:termdebug_config you can use: >vim
+	let g:termdebug_variables_window = 15
+Any value greater than 1 will set the Var window height to that value.
+If the current window has enough horizontal space, it will be vertically split
+and the Var window will be shown side by side with the source code window (and
+the height options won't be used).
 
 Communication ~
 						*termdebug-communication*
@@ -428,10 +517,6 @@ If the command needs an argument use a List: >vim
 If there is no g:termdebug_config you can use: >vim
 	let g:termdebugger = ['rr', 'replay', '--']
 
-To not use Nvim floating windows for previewing variable evaluation, set the
-`g:termdebug_useFloatingHover` variable like this: >vim
-	let g:termdebug_useFloatingHover = 0
-
 If you are a mouse person, you can also define a mapping using your right
 click to one of the terminal command like evaluate the variable under the
 cursor: >vim
@@ -451,7 +536,7 @@ The function will be called with the list of arguments so far, and a second
 argument that is the name of the pty.
 							*gdb-version*
 Only debuggers fully compatible with gdb will work.  Vim uses the GDB/MI
-interface.  The "new-ui" command  requires gdb version 7.12 or later.  if you
+interface.  The "new-ui" command requires gdb version 7.12 or later.  If you
 get this error:
 	Undefined command: "new-ui". Try "help".~
 Then your gdb is too old.
@@ -491,6 +576,20 @@ If you don't want this then disable it with: >vim
 	let g:termdebug_config['popup'] = 0
 If there is no g:termdebug_config you can use: >vim
 	let g:termdebug_popup = 0
+
+
+Change default signs ~
+							*termdebug_signs*
+Termdebug uses the hex number of the breakpoint ID in the signcolumn to
+represent breakpoints. if it is greater than "0xFF", then it will be displayed
+as "F+", due to we really only have two screen cells for the sign.
+
+If you want to customize the breakpoint signs: >vim
+	let g:termdebug_config['sign'] = '>>'
+If there is no g:terminal_config yet you can use: >vim
+	let g:termdebug_config = {'sign': '>>'}
+
+After this, breakpoints will be displayed as `>>` in the signcolumn.
 
 
 Vim window width ~

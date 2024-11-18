@@ -275,7 +275,8 @@ processing a quickfix or location list command, it will be aborted.
 			current window is used instead of the quickfix list.
 
 						*:cb* *:cbuffer* *E681*
-:cb[uffer][!] [bufnr]	Read the error list from the current buffer.
+:[range]cb[uffer][!] [bufnr]
+			Read the error list from the current buffer.
 			When [bufnr] is given it must be the number of a
 			loaded buffer.  That buffer will then be used instead
 			of the current buffer.
@@ -284,26 +285,31 @@ processing a quickfix or location list command, it will be aborted.
 			See |:cc| for [!].
 
 						*:lb* *:lbuffer*
-:lb[uffer][!] [bufnr]	Same as ":cbuffer", except the location list for the
+:[range]lb[uffer][!] [bufnr]
+			Same as ":cbuffer", except the location list for the
 			current window is used instead of the quickfix list.
 
 						*:cgetb* *:cgetbuffer*
-:cgetb[uffer] [bufnr]	Read the error list from the current buffer.  Just
+:[range]cgetb[uffer] [bufnr]
+			Read the error list from the current buffer.  Just
 			like ":cbuffer" but don't jump to the first error.
 
 						*:lgetb* *:lgetbuffer*
-:lgetb[uffer] [bufnr]	Same as ":cgetbuffer", except the location list for
+:[range]lgetb[uffer] [bufnr]
+			Same as ":cgetbuffer", except the location list for
 			the current window is used instead of the quickfix
 			list.
 
 						*:cad* *:cadd* *:caddbuffer*
-:cad[dbuffer] [bufnr]	Read the error list from the current buffer and add
+:[range]cad[dbuffer] [bufnr]
+			Read the error list from the current buffer and add
 			the errors to the current quickfix list.  If a
 			quickfix list is not present, then a new list is
 			created. Otherwise, same as ":cbuffer".
 
 							*:laddb* *:laddbuffer*
-:laddb[uffer] [bufnr]	Same as ":caddbuffer", except the location list for
+:[range]laddb[uffer] [bufnr]
+			Same as ":caddbuffer", except the location list for
 			the current window is used instead of the quickfix
 			list.
 
@@ -368,12 +374,12 @@ processing a quickfix or location list command, it will be aborted.
 :cl[ist]! +{count}	List the current and next {count} error lines.  This
 			is useful to see unrecognized lines after the current
 			one.  For example, if ":clist" shows:
-        8384 testje.java:252: error: cannot find symbol ~
+	8384 testje.java:252: error: cannot find symbol ~
 			Then using ":cl! +3" shows the reason:
-        8384 testje.java:252: error: cannot find symbol ~
-        8385:   ZexitCode = Fmainx(); ~
-        8386:               ^ ~
-        8387:   symbol:   method Fmainx() ~
+	8384 testje.java:252: error: cannot find symbol ~
+	8385:   ZexitCode = Fmainx(); ~
+	8386:               ^ ~
+	8387:   symbol:   method Fmainx() ~
 
 :lli[st] [from] [, [to]]				*:lli* *:llist*
 			Same as ":clist", except the location list for the
@@ -867,11 +873,11 @@ lists.  They set one of the existing error lists as the current one.
 
 						*:chistory* *:chi*
 :[count]chi[story]	Show the list of error lists.  The current list is
-			marked with ">".  The output looks like:
-			  error list 1 of 3; 43 errors   :make  ~
-			> error list 2 of 3; 0 errors    :helpgrep tag  ~
-			  error list 3 of 3; 15 errors   :grep ex_help *.c ~
-
+			marked with ">".  The output looks like: >
+			  error list 1 of 3; 43 errors   :make
+			> error list 2 of 3; 0 errors    :helpgrep tag
+			  error list 3 of 3; 15 errors   :grep ex_help *.c
+<
 			When [count] is given, then the count'th quickfix
 			list is made the current list. Example: >
 				" Make the 4th quickfix list current
@@ -1246,7 +1252,7 @@ not "b:current_compiler".  What the command actually does is the following:
 - Delete the "current_compiler" and "b:current_compiler" variables.
 - Define the "CompilerSet" user command.  With "!" it does ":set", without "!"
   it does ":setlocal".
-- Execute ":runtime! compiler/{name}.(vim|lua)".  The plugins are expected to
+- Execute ":runtime! compiler/{name}.{vim,lua}".  The plugins are expected to
   set options with "CompilerSet" and set the "current_compiler" variable to the
   name of the compiler.
 - Delete the "CompilerSet" user command.
@@ -1282,6 +1288,15 @@ g:compiler_gcc_ignore_unmatched_lines
 				commands run from make are generating false
 				positives.
 
+PANDOC					*quickfix-pandoc* *compiler-pandoc*
+
+The Pandoc compiler plugin expects that an output file type extension is
+passed to make, say :make html or :make pdf.
+
+Additional arguments can be passed to pandoc:
+
+- either by appending them to make, say `:make html --self-contained` .
+- or setting them in `b:pandoc_compiler_args` or `g:pandoc_compiler_args`
 
 PERL					*quickfix-perl* *compiler-perl*
 
@@ -1317,8 +1332,8 @@ TEX COMPILER						*compiler-tex*
 Included in the distribution compiler for TeX ($VIMRUNTIME/compiler/tex.vim)
 uses make command if possible.  If the compiler finds a file named "Makefile"
 or "makefile" in the current directory, it supposes that you want to process
-your *TeX files with make, and the makefile does the right work.  In this case
-compiler sets 'errorformat' for *TeX output and leaves 'makeprg' untouched.  If
+your `*TeX` files with make, and the makefile does the right work.  In this case
+compiler sets 'errorformat' for `*TeX` output and leaves 'makeprg' untouched.  If
 neither "Makefile" nor "makefile" is found, the compiler will not use make.
 You can force the compiler to ignore makefiles by defining
 b:tex_ignore_makefile or g:tex_ignore_makefile variable (they are checked for
@@ -1381,6 +1396,7 @@ rest is ignored.  Items can only be 1023 bytes long.
 Basic items
 
 	%f		file name (finds a string)
+	%b		buffer number (finds a number)
 	%o		module name (finds a string)
 	%l		line number (finds a number)
 	%e		end line number (finds a number)
@@ -1419,6 +1435,11 @@ backslash, it will look for a sequence of 'isfname' characters.
 On Windows a leading "C:" will be included in "%f", even when using "%f:".
 This means that a file name which is a single alphabetical letter will not be
 detected.
+
+The "%b" conversion is used to parse a buffer number.  This is useful for
+referring to lines in a scratch buffer or a buffer with no name.  If a buffer
+with the matching number doesn't exist, then that line is used as a non-error
+line.
 
 The "%p" conversion is normally followed by a "^".  It's used for compilers
 that output a line like: >
@@ -1615,7 +1636,7 @@ be escaped), meta symbols have to be written with leading '%':
 	%\		The single '\' character.  Note that this has to be
 			escaped ("%\\") in ":set errorformat=" definitions.
 	%.		The single '.' character.
-	%#		The single '*'(!) character.
+	%#		The single "*"(!) character.
 	%^		The single '^' character.  Note that this is not
 			useful, the pattern already matches start of line.
 	%$		The single '$' character.  Note that this is not
@@ -1933,7 +1954,7 @@ You can customize the given setting to suit your own purposes, for example,
 all the annoying "Overfull ..." warnings could be excluded from being
 recognized as an error.
 Alternatively to filtering the LaTeX compiler output, it is also possible
-to directly read the *.log file that is produced by the [La]TeX compiler.
+to directly read the `*.log` file that is produced by the [La]TeX compiler.
 This contains even more useful information about possible error causes.
 However, to properly parse such a complex file, an external filter should
 be used.  See the description further above how to make such a filter known

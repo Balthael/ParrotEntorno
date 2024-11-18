@@ -26,12 +26,12 @@ with these (optional) keys:
 
 							*ui-rgb*
 - `rgb`			Decides the color format.
-			- true:	(default) 24-bit RGB colors
-			- false:	Terminal colors (8-bit, max 256)
+			- true: (default) 24-bit RGB colors
+			- false: Terminal colors (8-bit, max 256)
 
 							*ui-override*
 - `override`		Decides how UI capabilities are resolved.
-			- true:	Enable requested UI capabilities, even if not
+			- true: Enable requested UI capabilities, even if not
 			  supported by all connected UIs (including |TUI|).
 			- false: (default) Disable UI capabilities not
 			  supported by all connected UIs (including TUI).
@@ -52,7 +52,6 @@ with these (optional) keys:
 - `ext_termcolors`	Use external default colors.
 - `term_name`		Sets the name of the terminal 'term'.
 - `term_colors`		Sets the number of supported colors 't_Co'.
-- `term_background`	Sets the default value of 'background'.
 - `stdin_fd`		Read buffer 1 from this fd as if it were stdin |--|.
 			Only from |--embed| UI on startup. |ui-startup-stdin|
 - `stdin_tty`		Tells if `stdin` is a `tty` or not.
@@ -139,7 +138,7 @@ procedure:
    to set |g:| variables visible to init.vim
 
 3. If the UI wants to do additional setup after user config is loaded,
-   register a VimEnter autocmd: >vim
+   register a VimEnter autocmd: >lua
       nvim_command("autocmd VimEnter * call rpcrequest(1, 'vimenter')")
 
 4. Now invoke |nvim_ui_attach()|. The UI must handle user input by now:
@@ -189,7 +188,7 @@ the editor.
 	`attr_id`:	Cursor attribute id (defined by `hl_attr_define`).
 			When attr_id is 0, the background and foreground
 			colors should be swapped.
-	`attr_id_lm`:	Cursor attribute id for when 'langmap' is active.
+	`attr_id_lm`:	Cursor attribute id for when |:lmap| is on.
 	`short_name`:	Mode code name, see 'guicursor'.
 	`name`:		Mode descriptive name.
 	`mouse_shape`:	(To be implemented.)
@@ -211,6 +210,7 @@ the editor.
 	- 'guifontwide'
 	- 'linespace'
 	- 'mousefocus'
+	- 'mousehide'
 	- 'mousemoveevent'
 	- 'pumblend'
 	- 'showtabline'
@@ -227,6 +227,10 @@ the editor.
 	taken effect on the grid, where appropriate empty cells are added,
 	however a UI might still use such options when rendering raw text
 	sent from Nvim, like for |ui-cmdline|.
+
+["chdir", path] ~
+	The |current-directory| of the embedded Nvim process changed to
+	`path`.
 
 ["mode_change", mode, mode_idx] ~
 	Editor mode changed.  The `mode` parameter is a string representing
@@ -324,9 +328,11 @@ numerical highlight ids to the actual attributes.
 	`underdotted`:		underdotted text. The dots have `special` color.
 	`underdashed`:		underdashed text. The dashes have `special` color.
 	`altfont`:		alternative font.
-	`blend`:		Blend level (0-100). Could be used by UIs to
+	`blend`:		blend level (0-100). Could be used by UIs to
 				support blending floating windows to the
 				background or to signal a transparent cursor.
+	`url`:			URL associated with this highlight. UIs should
+				present the region as a clickable hyperlink.
 
 	For absent color keys the default color should be used. Don't store
 	the default value in the table, rather a sentinel value, so that
@@ -555,7 +561,7 @@ with the following possible keys:
     `kind`:	always present. One of the following values:
 	"ui":       Builtin UI highlight. |highlight-groups|
 	"syntax":   Highlight applied to a buffer by a syntax declaration or
-	            other runtime/plugin functionality such as
+		    other runtime/plugin functionality such as
 		    |nvim_buf_add_highlight()|
 	"terminal": highlight from a process running in a |terminal-emulator|.
 		    Contains no further semantic information.
@@ -649,6 +655,11 @@ tabs.
 	this into account and keep the grid separated from what's displayed on
 	the screen and copy it to the viewport destination once `win_viewport`
 	is received.
+
+["win_viewport_margins", grid, win, top, bottom, left, right] ~
+	Indicates the margins of a window grid which are _not_ part of the
+	viewport as indicated by the `win_viewport` event. This happens
+	e.g. in the presence of 'winbar' and floating window borders.
 
 ["win_extmark", grid, win, ns_id, mark_id, row, col] ~
 	Updates the position of an extmark which is currently visible in a
@@ -766,9 +777,10 @@ This UI extension delegates presentation of messages and dialogs. Messages
 that would otherwise render in the message/cmdline screen space, are emitted
 as UI events.
 
-Nvim will not allocate screen space for the cmdline or messages, and
-'cmdheight' will be forced zero. Cmdline state is emitted as |ui-cmdline|
-events, which the UI must handle.
+Nvim will not allocate screen space for the cmdline or messages. 'cmdheight'
+will be set to zero, but can be changed and used for the replacing cmdline or
+message window. Cmdline state is emitted as |ui-cmdline| events, which the UI
+must handle.
 
 ["msg_show", kind, content, replace_last] ~
 	Display a message to the user.

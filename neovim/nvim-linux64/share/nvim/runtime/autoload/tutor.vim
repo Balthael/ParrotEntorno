@@ -29,7 +29,7 @@ function! tutor#MouseDoubleClick()
     if foldclosed(line('.')) > -1
         normal! zo
     else
-        if match(getline('.'), '^#\{1,} ') > -1
+        if match(getline('.'), '^#\{1,} ') > -1 && foldlevel(line('.')) > 0
             silent normal! zc
         else
             call tutor#FollowLink(0)
@@ -220,10 +220,20 @@ function! tutor#TutorCmd(tutor_name)
 
     call tutor#SetupVim()
     exe "edit ".l:to_open
+    call tutor#ApplyTransform()
 endfunction
 
 function! tutor#TutorCmdComplete(lead,line,pos)
     let l:tutors = s:GlobTutorials('*')
     let l:names = uniq(sort(map(l:tutors, 'fnamemodify(v:val, ":t:r")'), 's:Sort'))
     return join(l:names, "\n")
+endfunction
+
+function! tutor#ApplyTransform()
+    if has('win32')
+        sil! %s/{unix:(\(.\{-}\)),win:(\(.\{-}\))}/\2/g
+    else
+        sil! %s/{unix:(\(.\{-}\)),win:(\(.\{-}\))}/\1/g
+    endif
+    normal! gg0
 endfunction

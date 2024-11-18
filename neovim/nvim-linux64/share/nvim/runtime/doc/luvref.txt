@@ -3,10 +3,10 @@
 
                     LUV REFERENCE MANUAL
 
-								      *luvref*
+                                                                        *luvref*
 This file documents the Lua bindings for the LibUV library which is used for
-Nvim's event-loop and is accessible from Lua via |vim.loop| (e.g., |uv.version()|
-is exposed as `vim.loop.version()`).
+Nvim's event-loop and is accessible from Lua via |vim.uv| (e.g., |uv.version()|
+is exposed as `vim.uv.version()`).
 
 For information about this manual, see |luv-credits|.
 
@@ -29,7 +29,7 @@ TCP Echo Server Example ~
 Here is a small example showing a TCP echo server:
 
     >lua
-    local uv = vim.loop
+    local uv = vim.uv
 
     local server = uv.new_tcp()
     server:bind("127.0.0.1", 1337)
@@ -837,7 +837,7 @@ uv.new_prepare()                                              *uv.new_prepare()*
                 Creates and initializes a new |uv_prepare_t|. Returns the Lua
                 userdata wrapping it.
 
-                Returns: `uv_prepare_t userdata` or `fail`
+                Returns: `uv_prepare_t userdata`
 
 uv.prepare_start({prepare}, {callback})                     *uv.prepare_start()*
 
@@ -882,7 +882,7 @@ uv.new_check()                                                  *uv.new_check()*
                 Creates and initializes a new |uv_check_t|. Returns the Lua
                 userdata wrapping it.
 
-                Returns: `uv_check_t userdata` or `fail`
+                Returns: `uv_check_t userdata`
 
 uv.check_start({check}, {callback})                           *uv.check_start()*
 
@@ -934,7 +934,7 @@ uv.new_idle()                                                    *uv.new_idle()*
                 Creates and initializes a new |uv_idle_t|. Returns the Lua
                 userdata wrapping it.
 
-                Returns: `uv_idle_t userdata` or `fail`
+                Returns: `uv_idle_t userdata`
 
 uv.idle_start({idle}, {callback})                              *uv.idle_start()*
 
@@ -977,15 +977,15 @@ called from another thread.
     async:send()
 <
 
-uv.new_async([{callback}])                                      *uv.new_async()*
+uv.new_async({callback})                                        *uv.new_async()*
 
                 Parameters:
-                - `callback`: `callable` or `nil`
+                - `callback`: `callable`
                   - `...`: `threadargs` passed to/from
                     `uv.async_send(async, ...)`
 
                 Creates and initializes a new |uv_async_t|. Returns the Lua
-                userdata wrapping it. A `nil` callback is allowed.
+                userdata wrapping it.
 
                 Returns: `uv_async_t userdata` or `fail`
 
@@ -1301,11 +1301,11 @@ uv.spawn({path}, {options}, {on_exit})                              *uv.spawn()*
                 The `options` table accepts the following fields:
 
                   - `options.args` - Command line arguments as a list of
-                    string. The first string should be the path to the
-                    program. On Windows, this uses CreateProcess which
-                    concatenates the arguments into a string. This can cause
-                    some strange errors. (See `options.verbatim` below for
-                    Windows.)
+                    strings. The first string should not be the path to the
+                    program, since that is already provided via `path`. On
+                    Windows, this uses CreateProcess which concatenates the
+                    arguments into a string. This can cause some strange
+                    errors (see `options.verbatim` below for Windows).
                   - `options.stdio` - Set the file descriptors that will be
                     made available to the child process. The convention is
                     that the first entries are stdin, stdout, and stderr.
@@ -1355,7 +1355,7 @@ uv.process_kill({process}, {signum})                         *uv.process_kill()*
 
                 Parameters:
                 - `process`: `uv_process_t userdata`
-                - `signum`: `integer` or `string`
+                - `signum`: `integer` or `string` or `nil` (default: `sigterm`)
 
                 Sends the specified signal to the given process handle. Check
                 the documentation on |uv_signal_t| for signal support,
@@ -1367,7 +1367,7 @@ uv.kill({pid}, {signum})                                             *uv.kill()*
 
                 Parameters:
                 - `pid`: `integer`
-                - `signum`: `integer` or `string`
+                - `signum`: `integer` or `string` or `nil` (default: `sigterm`)
 
                 Sends the specified signal to the given PID. Check the
                 documentation on |uv_signal_t| for signal support, specially
@@ -2063,6 +2063,69 @@ uv.pipe({read_flags}, {write_flags})                                 *uv.pipe()*
                       print(chunk)
                     end)
 <
+
+uv.pipe_bind2({pipe}, {name}, {flags})                         *uv.pipe_bind2()*
+
+                > method form `pipe:pipe_bind(name, flags)`
+
+                Parameters:
+                - `pipe`: `uv_pipe_t userdata`
+                - `name`: `string`
+                - `flags`: `integer` or `table` or `nil` (default: 0)
+
+                Flags:
+                 - If `type(flags)` is `number`, it must be `0` or
+                   `uv.constants.PIPE_NO_TRUNCATE`.
+                 - If `type(flags)` is `table`, it must be `{}` or
+                   `{ no_truncate = true|false }`.
+                 - If `type(flags)` is `nil`, it use default value `0`.
+                 - Returns `EINVAL` for unsupported flags without performing the
+                   bind.
+
+                Bind the pipe to a file path (Unix) or a name (Windows).
+
+                Supports Linux abstract namespace sockets. namelen must include
+                the leading '\0' byte but not the trailing nul byte.
+
+                Returns: `0` or `fail`
+
+                *Note*:
+                1. Paths on Unix get truncated to sizeof(sockaddr_un.sun_path)
+                   bytes, typically between 92 and 108 bytes.
+                2. New in version 1.46.0.
+
+uv.pipe_connect2(pipe, name, [flags], [callback])           *uv.pipe_connect2()*
+
+                > method form `pipe:connect2(name, [flags], [callback])`
+
+                Parameters:
+                - `pipe`: `uv_pipe_t userdata`
+                - `name`: `string`
+                - `flags`: `integer` or `table` or `nil` (default: 0)
+                - `callback`: `callable` or `nil`
+                  - `err`: `nil` or `string`
+
+                `Flags`:
+
+                - If `type(flags)` is `number`, it must be `0` or
+                  `uv.constants.PIPE_NO_TRUNCATE`.
+                - If `type(flags)` is `table`, it must be `{}` or
+                  `{ no_truncate = true|false }`.
+                - If `type(flags)` is `nil`, it use default value `0`.
+                - Returns `EINVAL` for unsupported flags without performing the
+                  bind operation.
+
+                Connect to the Unix domain socket or the named pipe.
+
+                Supports Linux abstract namespace sockets. namelen must include
+                the leading nul byte but not the trailing nul byte.
+
+                Returns: `uv_connect_t userdata` or `fail`
+
+                *Note*:
+                1. Paths on Unix get truncated to sizeof(sockaddr_un.sun_path)
+                   bytes, typically between 92 and 108 bytes.
+                2. New in version 1.46.0.
 
 ==============================================================================
 `uv_tty_t` — TTY handle                                  *luv-tty-handle* *uv_tty_t*
@@ -2917,7 +2980,7 @@ uv.fs_fstat({fd} [, {callback}])                                 *uv.fs_fstat()*
 uv.fs_lstat({path} [, {callback}])                               *uv.fs_lstat()*
 
                 Parameters:
-                - `fd`: `integer`
+                - `path`: `string`
                 - `callback`: `callable` (async version) or `nil` (sync
                   version)
                   - `err`: `nil` or `string`
@@ -3499,6 +3562,109 @@ uv.thread_equal({thread}, {other_thread})                    *uv.thread_equal()*
                 This function is equivalent to the `__eq` metamethod.
 
                 Returns: `boolean`
+                                                     *uv.thread_setaffinity()*
+uv.thread_setaffinity({thread}, {affinity} [, {get_old_affinity}])
+
+                > method form `thread:setaffinity(affinity, [get_old_affinity])`
+
+                Parameters:
+                - `thread`: `luv_thread_t userdata`
+                - `affinity`: `table`
+                  - `[1, 2, 3, ..., n]` : `boolean`
+                - `get_old_affinity`: `boolean`
+
+                Sets the specified thread's affinity setting.
+
+                `affinity` must be a table where each of the keys are a CPU
+                number and the values are booleans that represent whether the
+                `thread` should be eligible to run on that CPU. If the length
+                of the `affinity` table is not greater than or equal to
+                |uv.cpumask_size()|, any CPU numbers missing from the table
+                will have their affinity set to `false`. If setting the
+                affinity of more than |uv.cpumask_size()| CPUs is desired,
+                `affinity` must be an array-like table with no gaps, since
+                `#affinity` will be used as the `cpumask_size` if it is
+                greater than |uv.cpumask_size()|.
+
+                If `get_old_affinity` is `true`, the previous affinity
+                settings for the `thread` will be returned. Otherwise, `true`
+                is returned after a successful call.
+
+                Note: Thread affinity setting is not atomic on Windows.
+                Unsupported on macOS.
+
+                Returns: `table` or `boolean` or `fail`
+                - `[1, 2, 3, ..., n]` : `boolean`
+
+
+uv.thread_getaffinity({thread} [, {mask_size}])        *uv.thread_getaffinity()*
+
+                > method form `thread:getaffinity([mask_size])`
+
+                Parameters:
+                - `thread`: `luv_thread_t userdata`
+                - `mask_size`: `integer`
+
+                Gets the specified thread's affinity setting.
+
+                If `mask_size` is provided, it must be greater than or equal
+                to `uv.cpumask_size()`. If the `mask_size` parameter is
+                omitted, then the return of `uv.cpumask_size()` will be used.
+                Returns an array-like table where each of the keys correspond
+                to a CPU number and the values are booleans that represent
+                whether the `thread` is eligible to run on that CPU.
+
+                Note: Thread affinity getting is not atomic on Windows.
+                Unsupported on macOS.
+
+                Returns: `table` or `fail`
+                - `[1, 2, 3, ..., n]` : `boolean`
+
+uv.thread_getcpu()                                          *uv.thread_getcpu()*
+
+                Gets the CPU number on which the calling thread is running.
+
+                Note: The first CPU will be returned as the number 1, not 0.
+                This allows for the number to correspond with the table keys
+                used in `uv.thread_getaffinity` and `uv.thread_setaffinity`.
+
+                Returns: `integer` or `fail`
+
+uv.thread_setpriority({thread}, {priority})            *uv.thread.setpriority()*
+
+                > method form `thread:setpriority(priority)`
+
+                Parameters:
+                - `thread`: `luv_thread_t userdata`
+                - `priority`: `number`
+
+                Sets the specified thread's scheduling priority setting. It
+                requires elevated privilege to set specific priorities on some
+                platforms. The priority can be set to the following constants:
+                - `uv.constants.THREAD_PRIORITY_HIGHEST`
+                - `uv.constants.THREAD_PRIORITY_ABOVE_NORMAL`
+                - `uv.constants.THREAD_PRIORITY_NORMAL`
+                - `uv.constants.THREAD_PRIORITY_BELOW_NORMAL`
+                - `uv.constants.THREAD_PRIORITY_LOWEST`
+
+                Returns: `boolean` or `fail`
+
+uv.thread_getpriority({thread})                        *uv.thread.getpriority()*
+
+                > method form `thread:getpriority()`
+
+                Parameters:
+                - `thread`: `luv_thread_t userdata`
+
+                Gets the thread's priority setting.
+
+                Retrieves the scheduling priority of the specified thread. The
+                returned priority value is platform dependent.
+
+                For Linux, when schedule policy is SCHED_OTHER (default),
+                priority is 0.
+
+                Returns: `number` or `fail`
 
 uv.thread_self()                                              *uv.thread_self()*
 
@@ -3588,6 +3754,16 @@ uv.get_constrained_memory()                        *uv.get_constrained_memory()*
 
                 Returns: `number`
 
+uv.get_available_memory()                            *uv.get_available_memory()*
+
+                Gets the amount of free memory that is still available to the
+                process (in bytes). This differs from `uv.get_free_memory()`
+                in that it takes into account any limits imposed by the OS. If
+                there is no such constraint, or the constraint is unknown, the
+                amount returned will be identical to `uv.get_free_memory()`.
+
+                Returns: `number`
+
 uv.resident_set_memory()                              *uv.resident_set_memory()*
 
                 Returns the resident set size (RSS) for the current process.
@@ -3652,6 +3828,14 @@ uv.cpu_info()                                                    *uv.cpu_info()*
                     - `idle` : `number`
                     - `irq` : `number`
 
+uv.cpumask_size()                                           *uv.cpumask_size()*
+
+                Returns the maximum size of the mask used for process/thread
+                affinities, or `ENOTSUP` if affinities are not supported on
+                the current platform.
+
+                Returns: `integer` or `fail`
+
 uv.getpid()                                                        *uv.getpid()*
 
                 DEPRECATED: Please use |uv.os_getpid()| instead.
@@ -3707,6 +3891,25 @@ uv.hrtime()                                                        *uv.hrtime()*
                 intervals.
 
                 Returns: `number`
+
+uv.clock_gettime({clock_id})                                *uv.clock_gettime()*
+
+                Parameters:
+                - `clock_id`: `string`
+
+                Obtain the current system time from a high-resolution
+                real-time or monotonic clock source. `clock_id` can be the
+                string `"monotonic"` or `"realtime"`.
+
+                The real-time clock counts from the UNIX epoch (1970-01-01)
+                and is subject to time adjustments; it can jump back in time.
+
+                The monotonic clock counts from an arbitrary point in the past
+                and never jumps back in time.
+
+                Returns: `table` or `fail`
+                - `sec`: `integer`
+                - `nsec`: `integer`
 
 uv.uptime()                                                        *uv.uptime()*
 
@@ -3846,7 +4049,12 @@ uv.os_setenv({name}, {value})                                   *uv.os_setenv()*
 
                 WARNING: This function is not thread safe.
 
-uv.os_unsetenv()                                              *uv.os_unsetenv()*
+uv.os_unsetenv({name})                                        *uv.os_unsetenv()*
+
+                Parameters:
+                - `name`: `string`
+
+                Unsets the environmental variable specified by `name`.
 
                 Returns: `boolean` or `fail`
 
@@ -3979,12 +4187,26 @@ uv.metrics_idle_time()                                  *uv.metrics_idle_time()*
 
                 Returns: `number`
 
+uv.metrics_info()                                            *uv.metrics_info()*
+
+                Get the metrics table from current set of event loop metrics.
+                It is recommended to retrieve these metrics in a `prepare`
+                callback (see |uv.new_prepare()|, |uv.prepare_start()|) in order
+                to make sure there are no inconsistencies with the metrics
+                counters.
+
+                Returns: `table`
+
+                - `loop_count` : `integer`
+                - `events` : `integer`
+                - `events_waiting` : `integer`
+
 ==============================================================================
 CREDITS                                                            *luv-credits*
 
 This document is a reformatted version of the LUV documentation, up-to-date
-with commit e8e7b7e (3 Feb 2023) of the luv repository
-https://github.com/luvit/luv/commit/e8e7b7e13225348a8806118a3ea9e021383a9536.
+with commit dcd1a1c (23 Aug 2023) of the luv repository
+https://github.com/luvit/luv/commit/dcd1a1cad5b05634a7691402d6ca2f214fb4ae76.
 
 Based on https://github.com/nanotee/luv-vimdocs with kind permission.
 

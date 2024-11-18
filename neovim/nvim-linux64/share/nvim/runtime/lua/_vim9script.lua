@@ -82,7 +82,7 @@ local vim9 = (function()
   end
 
   M.index = function(obj, idx)
-    if vim.tbl_islist(obj) then
+    if vim.islist(obj) then
       if idx < 0 then
         return obj[#obj + idx + 1]
       else
@@ -127,7 +127,7 @@ local vim9 = (function()
     assert(type(finish) == 'number')
 
     local slicer
-    if vim.tbl_islist(obj) then
+    if vim.islist(obj) then
       slicer = vim.list_slice
     elseif type(obj) == 'string' then
       slicer = string.sub
@@ -168,7 +168,7 @@ local vim9 = (function()
   end
 
   M.iter = function(expr)
-    if vim.tbl_islist(expr) then
+    if vim.islist(expr) then
       return ipairs(expr)
     else
       return pairs(expr)
@@ -234,7 +234,7 @@ vim9['convert'] = (function()
     elseif type(val) == 'table' then
       if vim.tbl_isempty(val) then
         return vim.empty_dict()
-      elseif vim.tbl_islist(val) then
+      elseif vim.islist(val) then
         error(string.format('Cannot pass list to dictionary? %s', vim.inspect(val)))
       else
         return val
@@ -280,7 +280,7 @@ vim9['fn'] = (function()
       error("haven't written this code yet")
     end
 
-    if vim.tbl_islist(right) then
+    if vim.islist(right) then
       vim.list_extend(left, right)
       return left
     else
@@ -312,7 +312,7 @@ vim9['fn'] = (function()
       -- We do have vim9script ;) that's this plugin
       ['vim9script'] = true,
 
-      -- Include some vim patches that are sometimes required by variuos vim9script plugins
+      -- Include some vim patches that are sometimes required by various vim9script plugins
       -- that we implement via vim9jit
       [ [[patch-8.2.2261]] ] = true,
       [ [[patch-8.2.4257]] ] = true,
@@ -513,7 +513,7 @@ vim9['import'] = (function()
 
   imported.absolute = setmetatable({}, {
     __index = function(self, name)
-      if vim.loop.fs_stat(name) then
+      if vim.uv.fs_stat(name) then
         local result = loadfile(name)()
         rawset(self, name, result)
 

@@ -588,7 +588,7 @@ after the substitute() call.
 FUNCTIONS						*function-list*
 
 There are many functions.  We will mention them here, grouped by what they are
-used for.  You can find an alphabetical list here: |builtin-function-list|.
+used for.  You can find an alphabetical list here: |builtin-function-details|.
 Use CTRL-] on the function name to jump to detailed help on it.
 
 String manipulation:					*string-functions*
@@ -610,10 +610,13 @@ String manipulation:					*string-functions*
 	toupper()		turn a string to uppercase
 	charclass()		class of a character
 	match()			position where a pattern matches in a string
+	matchbufline()		all the matches of a pattern in a buffer
 	matchend()		position where a pattern match ends in a string
 	matchfuzzy()		fuzzy matches a string in a list of strings
 	matchfuzzypos()		fuzzy matches a string in a list of strings
 	matchstr()		match of a pattern in a string
+	matchstrlist()		all the matches of a pattern in a List of
+				strings
 	matchstrpos()		match and positions of a pattern in a string
 	matchlist()		like matchstr() and also return submatches
 	stridx()		first index of a short string in a long string
@@ -621,14 +624,18 @@ String manipulation:					*string-functions*
 	strlen()		length of a string in bytes
 	strcharlen()		length of a string in characters
 	strchars()		number of characters in a string
+	strutf16len()		number of UTF-16 code units in a string
 	strwidth()		size of string when displayed
 	strdisplaywidth()	size of string when displayed, deals with tabs
 	setcellwidths()		set character cell width overrides
 	getcellwidths()		get character cell width overrides
+	reverse()		reverse the order of characters in a string
 	substitute()		substitute a pattern match with a string
 	submatch()		get a specific match in ":s" and substitute()
 	strpart()		get part of a string using byte index
 	strcharpart()		get part of a string using char index
+	slice()			take a slice of a string, using char index in
+				Vim9 script
 	strgetchar()		get character from a string using char index
 	expand()		expand special keywords
 	expandcmd()		expand a command like done for `:edit`
@@ -636,6 +643,7 @@ String manipulation:					*string-functions*
 	byteidx()		byte index of a character in a string
 	byteidxcomp()		like byteidx() but count composing characters
 	charidx()		character index of a byte in a string
+	utf16idx()		UTF-16 index of a byte in a string
 	repeat()		repeat a string multiple times
 	eval()			evaluate a string expression
 	execute()		execute an Ex command and get the output
@@ -656,9 +664,12 @@ List manipulation:					*list-functions*
 	deepcopy()		make a full copy of a List
 	filter()		remove selected items from a List
 	map()			change each List item
+	mapnew()		make a new List with changed items
+	foreach()		apply function to List items
 	reduce()		reduce a List to a value
+	slice()			take a slice of a List
 	sort()			sort a List
-	reverse()		reverse the order of a List or Blob
+	reverse()		reverse the order of items in a List
 	uniq()			remove copies of repeated adjacent items
 	split()			split a String into a List
 	join()			join List items into a String
@@ -685,6 +696,8 @@ Dictionary manipulation:				*dict-functions*
 	extendnew()		make a new Dictionary and append items
 	filter()		remove selected entries from a Dictionary
 	map()			change each Dictionary entry
+	mapnew()		make a new Dictionary with changed items
+	foreach()		apply function to Dictionary items
 	keys()			get List of Dictionary keys
 	values()		get List of Dictionary values
 	items()			get List of Dictionary key-value pairs
@@ -724,6 +737,7 @@ Floating point computation:				*float-functions*
 Blob manipulation:					*blob-functions*
 	blob2list()		get a list of numbers from a blob
 	list2blob()		get a blob from a list of numbers
+	reverse()		reverse the order of numbers in a blob
 
 Other computation:					*bitwise-function*
 	and()			bitwise AND
@@ -779,6 +793,7 @@ Cursor and mark position:		*cursor-functions* *mark-functions*
 
 Working with text in the current buffer:		*text-functions*
 	getline()		get a line or list of lines from the buffer
+	getregion()		get a region of text from the buffer
 	setline()		replace a line in the buffer
 	append()		append line or list of lines in the buffer
 	indent()		indent of a specific line
@@ -883,6 +898,7 @@ Buffers, windows and the argument list:
 	getwininfo()		get a list with window information
 	getchangelist()		get a list of change list entries
 	getjumplist()		get a list of jump list entries
+	swapfilelist()		list of existing swap files in 'directory'
 	swapinfo()		information about a swap file
 	swapname()		get the swap file path of a buffer
 
@@ -932,7 +948,7 @@ Syntax and highlighting:	  *syntax-functions* *highlighting-functions*
 	synIDattr()		get a specific attribute of a syntax ID
 	synIDtrans()		get translated syntax ID
 	synstack()		get list of syntax IDs at a specific position
-	synconcealed()		get info about concealing
+	synconcealed()		get info about (syntax) concealing
 	diff_hlID()		get highlight ID for diff mode at a position
 	matchadd()		define a pattern to highlight (a "match")
 	matchaddpos()		define a list of positions to highlight
@@ -1005,6 +1021,7 @@ Mappings and Menus:			    *mapping-functions*
 	hasmapto()		check if a mapping exists
 	mapcheck()		check if a matching mapping exists
 	maparg()		get rhs of a mapping
+	maplist()		get list of all mappings
 	mapset()		restore a mapping
 	menu_info()		get information about a menu item
 	wildmenumode()		check if the wildmode is active
@@ -1086,7 +1103,7 @@ Various:					*various-functions*
 	libcallnr()		idem, returning a number
 
 	undofile()		get the name of the undo file
-	undotree()		return the state of the undo tree
+	undotree()		return the state of the undo tree for a buffer
 
 	shiftwidth()		effective value of 'shiftwidth'
 
@@ -1327,7 +1344,7 @@ is a List with arguments.
 Function references are most useful in combination with a Dictionary, as is
 explained in the next section.
 
-More information about defining your own functions here: |user-functions|.
+More information about defining your own functions here: |user-function|.
 
 ==============================================================================
 *41.8*	Lists and Dictionaries
@@ -1776,7 +1793,7 @@ PITFALLS
 Even bigger problem arises in the following example: >
 
 	:map ,ab o#include
-	:unmap ,ab 
+	:unmap ,ab
 
 Here the unmap command will not work, because it tries to unmap ",ab ".  This
 does not exist as a mapped sequence.  An error will be issued, which is very
@@ -2238,7 +2255,7 @@ Example: >
 
 Write this single-line file as "ftdetect/foofoo.vim" in the first directory
 that appears in 'runtimepath'.  For Unix that would be
-"~/.config/nvim/ftdetect/foofoo.vim".  The convention is to use the name of 
+"~/.config/nvim/ftdetect/foofoo.vim".  The convention is to use the name of
 the filetype for the script name.
 
 You can make more complicated checks if you like, for example to inspect the
@@ -2309,7 +2326,7 @@ you can write the different setting in a script: >
 
 Now write this in the "after" directory, so that it gets sourced after the
 distributed "vim.vim" ftplugin |after-directory|.  For Unix this would be
-"~/.config/nvim/after/ftplugin/vim.vim".  Note that the default plugin will 
+"~/.config/nvim/after/ftplugin/vim.vim".  Note that the default plugin will
 have set "b:did_ftplugin", but it is ignored here.
 
 
@@ -2479,17 +2496,13 @@ a user to overrule or add to the default file.  The default files start with: >
 	:let current_compiler = "mine"
 
 When you write a compiler file and put it in your personal runtime directory
-(e.g., ~/.config/nvim/compiler for Unix), you set the "current_compiler" 
+(e.g., ~/.config/nvim/compiler for Unix), you set the "current_compiler"
 variable to make the default file skip the settings.
 							*:CompilerSet*
 The second mechanism is to use ":set" for ":compiler!" and ":setlocal" for
-":compiler".  Vim defines the ":CompilerSet" user command for this.  However,
-older Vim versions don't, thus your plugin should define it then.  This is an
-example: >
+":compiler".  Vim defines the ":CompilerSet" user command for this.  This is
+an example: >
 
-  if exists(":CompilerSet") != 2
-    command -nargs=* CompilerSet setlocal <args>
-  endif
   CompilerSet errorformat&		" use the default 'errorformat'
   CompilerSet makeprg=nmake
 

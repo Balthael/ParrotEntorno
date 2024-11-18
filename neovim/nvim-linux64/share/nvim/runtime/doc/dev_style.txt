@@ -6,7 +6,7 @@
 
 Nvim style guide                                        *dev-style*
 
-This is style guide for developers working on Nvim's source code.
+Style guidelines for developers working Nvim's source code.
 
 License: CC-By 3.0 https://creativecommons.org/licenses/by/3.0/
 
@@ -32,32 +32,53 @@ but we nonetheless keep things as they are in order to preserve consistency.
 Header Files                                            *dev-style-header*
 
 
-The #define Guard ~
+Header guard ~
 
-All header files should have `#define` guards to prevent multiple inclusion.
-The format of the symbol name should be `NVIM_<DIRECTORY>_<FILE>_H`.
+All header files should start with `#pragma once` to prevent multiple inclusion.
 
     In foo/bar.h:
 >c
-        #ifndef NVIM_FOO_BAR_H
-        #define NVIM_FOO_BAR_H
-
-        ...
-
-        #endif  // NVIM_FOO_BAR_H
+        #pragma once
 <
 
+Headers system ~
 
-Constants ~
+Nvim uses two types of headers. There are "normal" headers and "defs" headers.
+Typically, each normal header will have a corresponding defs header, e.g.
+`fileio.h` and `fileio_defs.h`. This distinction is done to minimize
+recompilation on change. The reason for this is because adding a function or
+modifying a function's signature happens more frequently than changing a type
+The goal is to achieve the following:
 
-Do not use macros to define constants in headers.
+- All headers (defs and normal) must include only defs headers, system
+  headers, and generated declarations. In other words, headers must not
+  include normal headers.
 
-Macro constants in header files cannot be used by unit tests.
+- Source (.c) files may include all headers, but should only include normal
+  headers if they need symbols and not types.
 
-However, you are allowed to define a macro that holds the same value as a
-non-enum constant (defined in the same header) if the value of the constant
-represents the size of an array.
+Use the following guideline to determine what to put where:
 
+Symbols:
+  - regular function declarations
+  - `extern` variables (including the `EXTERN` macro)
+
+Non-symbols:
+  - macros, i.e. `#define`.
+  - static inline functions, but only if its function declaration has a
+    `REAL_FATTR_ALWAYS_INLINE` attribute.
+  - typedefs
+  - structs
+  - enums
+
+- All symbols must be moved to normal headers.
+
+- Non-symbols used by multiple headers should be moved to defs headers. This
+  is to ensure headers only include defs headers. Conversely, non-symbols used
+  by only a single header should be moved to that header.
+
+- EXCEPTION: if the macro calls a function, then it must be moved to a normal
+  header.
 
 ==============================================================================
 Scoping                                                 *dev-style-scope*
@@ -78,6 +99,24 @@ should be used instead of declaration and assignment, e.g. >c
 
     int j = g();  // GOOD: declaration has initialization.
 
+
+Initialization ~
+
+Multiple declarations can be defined in one line if they aren't initialized,
+but each initialization should be done on a separate line.
+
+>c
+    int i;
+    int j; // GOOD
+
+    int i, j;   // GOOD: multiple declarations, no initialization.
+
+    int i = 0;
+    int j = 0;  // GOOD: one initialization per line.
+
+    int i = 0, j;  // BAD: multiple declarations with initialization.
+
+    int i = 0, j = 0;  // BAD: multiple declarations with initialization.
 
 ==============================================================================
 Nvim-Specific Magic
@@ -196,7 +235,7 @@ Function declarations ~
 
 Every function must not have a separate declaration.
 
-Function declarations are created by the gendeclarations.lua script. >c
+Function declarations are created by the gen_declarations.lua script. >c
 
     static void f(void);
 
@@ -245,15 +284,13 @@ contain only non-static function declarations. >c
 
 
     // src/nvim/foo.h file
-    #ifndef NVIM_FOO_H
-    #define NVIM_FOO_H
+    #pragma once
 
     …
 
     #ifdef INCLUDE_GENERATED_DECLARATIONS
     # include "foo.h.generated.h"
     #endif
-    #endif  // NVIM_FOO_H
 
 
 64-bit Portability ~
@@ -781,47 +818,6 @@ example, `"\uFEFF"`, is the Unicode zero-width no-break space character, which
 would be invisible if included in the source as straight UTF-8.
 
 
-Function Calls ~
-
-On one line if it fits; otherwise, wrap arguments at the parenthesis.
-
-Function calls have the following format: >c
-
-    bool retval = do_something(argument1, argument2, argument3);
-
-If the arguments do not all fit on one line, they should be broken up onto
-multiple lines, with each subsequent line aligned with the first argument. Do
-not add spaces after the open paren or before the close paren: >c
-
-    bool retval = do_something(averyveryveryverylongargument1,
-                               argument2, argument3);
-
-If the function has many arguments, consider having one per line if this makes
-the code more readable: >c
-
-    bool retval = do_something(argument1,
-                               argument2,
-                               argument3,
-                               argument4);
-
-Arguments may optionally all be placed on subsequent lines, with one line per
-argument: >c
-
-    if (...) {
-      ...
-      ...
-      if (...) {
-        do_something(
-            argument1,  // 4 space indent
-            argument2,
-            argument3,
-            argument4);
-      }
-
-In particular, this should be done if the function signature is so long that
-it cannot fit within the maximum line length.
-
-
 Braced Initializer Lists ~
 
 Format a braced list exactly like you would format a function call in its
@@ -846,7 +842,7 @@ Annotate non-trivial fall-through between cases.
 If not conditional on an enumerated value, switch statements should always
 have a `default` case (in the case of an enumerated value, the compiler will
 warn you if any values are not handled). If the default case should never
-execute, simply `assert`: >c
+execute, simply use `abort()`: >c
 
     switch (var) {
       case 0:
@@ -856,8 +852,54 @@ execute, simply `assert`: >c
         ...
         break;
       default:
-        assert(false);
+        abort();
     }
+
+Switch statements that are conditional on an enumerated value should not have
+a `default` case if it is exhaustive. Explicit case labels are preferred over
+`default`, even if it leads to multiple case labels for the same code. For
+example, instead of: >c
+
+    case A:
+      ...
+    case B:
+      ...
+    case C:
+      ...
+    default:
+      ...
+
+You should use: >c
+
+    case A:
+      ...
+    case B:
+      ...
+    case C:
+      ...
+    case D:
+    case E:
+    case F:
+      ...
+
+Certain compilers do not recognize an exhaustive enum switch statement as
+exhaustive, which causes compiler warnings when there is a return statement in
+every case of a switch statement, but no catch-all return statement. To fix
+these spurious errors, you are advised to use `UNREACHABLE` after the switch
+statement to explicitly tell the compiler that the switch statement always
+returns and any code after it is unreachable. For example: >c
+
+    enum { A, B, C } var;
+    ...
+    switch (var) {
+      case A:
+        return 1;
+      case B:
+        return 2;
+      case C:
+        return 3;
+    }
+    UNREACHABLE;
 
 Return Values ~
 
@@ -877,11 +919,6 @@ Horizontal Whitespace ~
 
 Use of horizontal whitespace depends on location.
 
-    General ~
->c
-        int x[] = { 0 };  // Spaces inside braces for braced-init-list.
-<
-
     Variables ~
 >c
         int long_variable = 0;  // Don't align assignments.
@@ -897,26 +934,6 @@ Use of horizontal whitespace depends on location.
           { "Emma",      "Mason",   2  },
         };
 <
-
-
-    Operators ~
->c
-        x = 0;            // Assignment operators always have spaces around
-                          // them.
-        x = -5;           // No spaces separating unary operators and their
-        x++;              // arguments.
-        if (x && !y)
-<
-
-Vertical Whitespace ~
-
-Minimize use of vertical whitespace.
-
-The basic principle is: The more code that fits on one screen, the easier it
-is to follow and understand the control flow of the program. Of course,
-readability can suffer from code being too dense as well as too spread out, so
-use your judgment. But in general, minimize use of vertical whitespace.
-
 
 ==============================================================================
 Parting Words

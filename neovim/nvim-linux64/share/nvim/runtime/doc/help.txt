@@ -47,6 +47,7 @@ ABOUT NVIM				*reference_toc* *doc-file-list* *Q_ct*
 |news|			News since the previous release
 |nvim|			Transitioning from Vim
 |vim-differences|	Nvim compared to Vim
+|faq|			Frequently Asked Questions
 |user-manual|		User manual: How to accomplish editing tasks.
 |quickref|		Overview of common commands
 |tutor|			30-minute interactive course for beginners
@@ -100,12 +101,12 @@ ADVANCED EDITING
 ------------------------------------------------------------------------------
 API (EXTENSIBILITY/SCRIPTING/PLUGINS)
 
-|api|			Nvim API via RPC, Lua and VimL
+|api|			Nvim API via RPC, Lua and Vimscript
 |ui|			Nvim UI protocol
 |lua-guide|		Nvim Lua guide
 |lua|			Lua API
 |luaref|		Lua reference manual
-|luvref|		Luv (|vim.loop|) reference manual
+|luvref|		Luv (|vim.uv|) reference manual
 |autocmd|		Event handlers
 |job-control|		Spawn and control multiple processes
 |channel|		Nvim asynchronous IO
@@ -167,11 +168,12 @@ DEVELOPING NVIM
 
 |dev|			Development of Nvim
 |dev-style|		Development style guidelines
-|debug.txt|		Debugging Vim itself
+|dev-theme|		Design guidelines (colorschemes etc.)
+|dev-tools|		Tools and techniques for developing Nvim
+|dev-vimpatch|		Merging patches from Vim
 
 Standard plugins ~
 						*standard-plugin-list*
-|matchit.txt|		Extended |%| matching
 |pi_gzip.txt|		Reading and writing compressed files
 |pi_health.txt|		Healthcheck framework
 |pi_msgpack.txt|	msgpack utilities

@@ -1,7 +1,8 @@
 " Vim filetype plugin
-" Language:	Vim
-" Maintainer:	Bram Moolenaar <Bram@vim.org>
-" Last Change:	2023 Feb 07
+" Language:		Vim
+" Maintainer:		Doug Kearns <dougkearns@gmail.com>
+" Last Change:		2024 Apr 13
+" Former Maintainer:	Bram Moolenaar <Bram@vim.org>
 
 " Only do this when not done yet for this buffer
 if exists("b:did_ftplugin")
@@ -48,17 +49,16 @@ setlocal isk+=#
 " Use :help to lookup the keyword under the cursor with K.
 setlocal keywordprg=:help
 
-" if "\n" .. getline(1, 10)->join("\n") =~# '\n\s*vim9\%[script]\>'
-if "\n" .. join(getline(1, 10), "\n") =~# '\n\s*vim9\%[script]\>'
-  " Set 'comments' to format dashed lists in comments
-  setlocal com=sO:#\ -,mO:#\ \ ,eO:##,:#
-  " Comments starts with # in Vim9 script
+" Comments starts with # in Vim9 script.  We have to guess which one to use.
+if "\n" .. getline(1, 32)->join("\n") =~# '\n\s*vim9\%[script]\>'
   setlocal commentstring=#%s
 else
-  setlocal com=sO:\"\ -,mO:\"\ \ ,eO:\"\",:\"
-  " Comments starts with a double quote in legacy script
   setlocal commentstring=\"%s
 endif
+
+" Set 'comments' to format dashed lists in comments, both in Vim9 and legacy
+" script.
+setlocal com=sO:#\ -,mO:#\ \ ,eO:##,:#\\\ ,:#,sO:\"\ -,mO:\"\ \ ,eO:\"\",:\"\\\ ,:\"
 
 
 " Format comments to be up to 78 characters long
@@ -83,8 +83,8 @@ if !exists("no_plugin_maps") && !exists("no_vim_maps")
   vnoremap <silent><buffer> ][ m':<C-U>exe "normal! gv"<Bar>call search('^\s*end\(f\%[unction]\\|def\)\>', "W")<CR>
 
   " Move around comments
-  nnoremap <silent><buffer> ]" :call search('^\(\s*".*\n\)\@<!\(\s*"\)', "W")<CR>
-  vnoremap <silent><buffer> ]" :<C-U>exe "normal! gv"<Bar>call search('^\(\s*".*\n\)\@<!\(\s*"\)', "W")<CR>
+  nnoremap <silent><buffer> ]" :call search('\%(^\s*".*\n\)\@<!\%(^\s*"\)', "W")<CR>
+  vnoremap <silent><buffer> ]" :<C-U>exe "normal! gv"<Bar>call search('\%(^\s*".*\n\)\@<!\%(^\s*"\)', "W")<CR>
   nnoremap <silent><buffer> [" :call search('\%(^\s*".*\n\)\%(^\s*"\)\@!', "bW")<CR>
   vnoremap <silent><buffer> [" :<C-U>exe "normal! gv"<Bar>call search('\%(^\s*".*\n\)\%(^\s*"\)\@!', "bW")<CR>
 endif

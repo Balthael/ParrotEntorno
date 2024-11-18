@@ -1,6 +1,6 @@
 -- This is a generated file. DO NOT EDIT!
 
-assert(require("jit").version == "LuaJIT 2.1.1692716794", "LuaJIT core/library version mismatch")
+assert(require("jit").version == "LuaJIT 2.1.1713484068", "LuaJIT core/library version mismatch")
 
 return {
 
@@ -136,7 +136,7 @@ traceerr = {
 "too many snapshots",
 "blacklisted",
 "retry recording",
-"NYI: bytecode %d",
+"NYI: bytecode %s",
 "leaving loop in root trace",
 "inner loop in root trace",
 "loop unroll limit reached",

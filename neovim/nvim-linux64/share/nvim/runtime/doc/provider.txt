@@ -66,7 +66,7 @@ To disable Python 3 support: >vim
 PYTHON VIRTUALENVS ~
 						*python-virtualenv*
 If you plan to use per-project virtualenvs often, you should assign one
-virtualenv for Neovim and hard-code the interpreter path via
+virtualenv for Nvim and hard-code the interpreter path via
 |g:python3_host_prog| so that the "pynvim" package is not required
 for each virtualenv.
 
@@ -182,15 +182,15 @@ the "+" and/or "*" registers explicitly): >vim
 See 'clipboard' for details and options.
 
 							      *clipboard-tool*
-The presence of a working clipboard tool implicitly enables the '+' and '*'
+The presence of a working clipboard tool implicitly enables the '+' and "*"
 registers. Nvim looks for these clipboard tools, in order of priority:
 
-  - |g:clipboard|
+  - |g:clipboard| (unless unset or `false`)
   - pbcopy, pbpaste (macOS)
   - wl-copy, wl-paste (if $WAYLAND_DISPLAY is set)
   - waycopy, waypaste (if $WAYLAND_DISPLAY is set)
-  - xclip (if $DISPLAY is set)
   - xsel (if $DISPLAY is set)
+  - xclip (if $DISPLAY is set)
   - lemonade (for SSH) https://github.com/pocke/lemonade
   - doitclient (for SSH) https://www.chiark.greenend.org.uk/~sgtatham/doit/
   - win32yank (Windows)
@@ -253,7 +253,48 @@ For Windows WSL, try this g:clipboard definition:
                 \   },
                 \   'cache_enabled': 0,
                 \ }
+<
+							    *clipboard-osc52*
+Nvim bundles a clipboard provider that allows copying to the system clipboard
+using OSC 52. OSC 52 is an Operating System Command control sequence that
+writes the copied text to the terminal emulator. If the terminal emulator
+supports OSC 52 then it will write the copied text into the system clipboard.
 
+Nvim will attempt to automatically determine if the host terminal emulator
+supports the OSC 52 sequence and enable the OSC 52 clipboard provider if it
+does as long as all of the following are true:
+
+  • Nvim is running in the |TUI|
+  • |g:clipboard| is unset
+  • 'clipboard' is not set to "unnamed" or "unnamedplus"
+  • $SSH_TTY is set
+
+If any of the above conditions are not met then the OSC 52 clipboard provider
+will not be used by default and Nvim will fall back to discovering a
+|clipboard-tool| through the usual process.
+
+To force Nvim to use the OSC 52 provider you can use the following
+|g:clipboard| definition: >lua
+
+    vim.g.clipboard = {
+      name = 'OSC 52',
+      copy = {
+        ['+'] = require('vim.ui.clipboard.osc52').copy('+'),
+        ['*'] = require('vim.ui.clipboard.osc52').copy('*'),
+      },
+      paste = {
+        ['+'] = require('vim.ui.clipboard.osc52').paste('+'),
+        ['*'] = require('vim.ui.clipboard.osc52').paste('*'),
+      },
+    }
+<
+Note that not all terminal emulators support reading from the system clipboard
+(and even for those that do, users should be aware of the security
+implications), so using OSC 52 for pasting may not be possible (and not
+necessary, because you can |paste| instead using your system paste function).
+Users may need to configure their terminal emulator to allow reading from the
+clipboard.
+<
 ==============================================================================
 Paste							*provider-paste* *paste*
 

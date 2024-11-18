@@ -83,6 +83,15 @@ Detecting an existing swap file ~
 
 You can find this in the user manual, section |11.3|.
 
+									*W325*
+The default |SwapExists| handler (|default-autocmds|) skips the |E325| prompt
+(and automatically chooses "(E)dit") if the swapfile owner process is still
+running and owned by the current user.  This presumes that you normally don't
+want to be bothered with the |ATTENTION| message just because you happen to
+edit the same file from multiple Nvim instances.  In the worst case (a system
+crash) there will be more than one swapfile for the file; use |:recover| to
+inspect all of its swapfiles.
+
 
 Updating the swapfile ~
 
@@ -154,7 +163,7 @@ the recover command:
 :rec[over]! [file]	Like ":recover", but any changes in the current
 			buffer are lost.
 
-							*E312* *E309* *E310*
+						*E312* *E309* *E310* *E1364*
 Vim has some intelligence about what to do if the swap file is corrupt in
 some way.  If Vim has doubt about what it found, it will give an error
 message and insert lines with "???" in the text.  If you see an error message

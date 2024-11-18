@@ -1,7 +1,8 @@
 " Vim filetype plugin file
 " Language:	C++
-" Maintainer:	Bram Moolenaar <Bram@vim.org>
-" Last Change:	2020 Jul 26
+" Maintainer:	The Vim Project <https://github.com/vim/vim>
+" Last Change:	2023 Aug 10
+" Former Maintainer:	Bram Moolenaar <Bram@vim.org>
 
 " Only do this when not done yet for this buffer
 if exists("b:did_ftplugin")
@@ -9,8 +10,8 @@ if exists("b:did_ftplugin")
 endif
 
 " Behaves mostly just like C
-runtime! ftplugin/c.vim ftplugin/c_*.vim ftplugin/c/*.vim
-runtime! ftplugin/c.lua ftplugin/c_*.lua ftplugin/c/*.lua
+" XXX: "[.]" in the first pattern makes it a wildcard on Windows
+runtime! ftplugin/c[.]{vim,lua} ftplugin/c_*.{vim,lua} ftplugin/c/*.{vim,lua}
 
 " C++ uses templates with <things>
 " Disabled, because it gives an error for typing an unmatched ">".

@@ -54,9 +54,9 @@ you can either set the 'filetype' option manually, or add a modeline to your
 file.  Example, for an IDL file use the command: >
 	:set filetype=idl
 
-or add this |modeline| to the file:
-	/* vim: set filetype=idl : */ ~
-
+or add this |modeline| to the file: >
+	/* vim: set filetype=idl : */
+<
 						*:filetype-plugin-on*
 You can enable loading the plugin files for specific file types with: >
 	:filetype plugin on
@@ -136,37 +136,46 @@ what kind of file it is.  This doesn't always work.  A number of global
 variables can be used to overrule the filetype used for certain extensions:
 
 	file name	variable ~
-	*.asa		g:filetype_asa	|ft-aspvbs-syntax| |ft-aspperl-syntax|
-	*.asm		g:asmsyntax	|ft-asm-syntax|
-	*.asp		g:filetype_asp	|ft-aspvbs-syntax| |ft-aspperl-syntax|
-	*.bas		g:filetype_bas	|ft-basic-syntax|
-	*.cfg		g:filetype_cfg
-	*.cls		g:filetype_cls
-	*.csh		g:filetype_csh	|ft-csh-syntax|
-	*.dat		g:filetype_dat
-	*.frm		g:filetype_frm	|ft-form-syntax|
-	*.fs		g:filetype_fs	|ft-forth-syntax|
-	*.i		g:filetype_i	|ft-progress-syntax|
-	*.inc		g:filetype_inc
-	*.lsl		g:filetype_lsl
-	*.m		g:filetype_m	|ft-mathematica-syntax|
-	*.mod		g:filetype_mod
-	*.p		g:filetype_p	|ft-pascal-syntax|
-	*.pl		g:filetype_pl
-	*.pp		g:filetype_pp	|ft-pascal-syntax|
-	*.prg		g:filetype_prg
-	*.r		g:filetype_r
-	*.sig		g:filetype_sig
-	*.sql		g:filetype_sql	|ft-sql-syntax|
-	*.src		g:filetype_src
-	*.sys		g:filetype_sys
-	*.sh		g:bash_is_sh	|ft-sh-syntax|
-	*.tex		g:tex_flavor	|ft-tex-plugin|
-	*.w		g:filetype_w	|ft-cweb-syntax|
+	`*.asa`		g:filetype_asa		|ft-aspperl-syntax|
+						|ft-aspvbs-syntax|
+	`*.asm`		g:asmsyntax		|ft-asm-syntax|
+	`*.asp`		g:filetype_asp		|ft-aspperl-syntax|
+						|ft-aspvbs-syntax|
+	`*.bas`		g:filetype_bas		|ft-basic-syntax|
+	`*.cfg`		g:filetype_cfg
+	`*.cls`		g:filetype_cls
+	`*.csh`		g:filetype_csh		|ft-csh-syntax|
+	`*.dat`		g:filetype_dat
+	`*.def`		g:filetype_def
+	`*.f`		g:filetype_f		|ft-forth-syntax|
+	`*.frm`		g:filetype_frm		|ft-form-syntax|
+	`*.fs`		g:filetype_fs		|ft-forth-syntax|
+	`*.h`		g:c_syntax_for_h	|ft-c-syntax|
+	`*.i`		g:filetype_i		|ft-progress-syntax|
+	`*.inc`		g:filetype_inc
+	`*.lsl`		g:filetype_lsl
+	`*.m`		g:filetype_m		|ft-mathematica-syntax|
+	`*.markdown,*.mdown,*.mkd,*.mkdn,*.mdwn,*.md`
+			g:filetype_md		|ft-pandoc-syntax|
+	`*.mod`		g:filetype_mod
+	`*.p`		g:filetype_p		|ft-pascal-syntax|
+	`*.pl`		g:filetype_pl
+	`*.pp`		g:filetype_pp		|ft-pascal-syntax|
+	`*.prg`		g:filetype_prg
+	`*.r`		g:filetype_r
+	`*.sig`		g:filetype_sig
+	`*.sql`		g:filetype_sql		|ft-sql-syntax|
+	`*.src`		g:filetype_src
+	`*.sys`		g:filetype_sys
+	`*.sh`		g:bash_is_sh		|ft-sh-syntax|
+	`*.tex`		g:tex_flavor		|ft-tex-plugin|
+	`*.typ`		g:filetype_typ
+	`*.v`		g:filetype_v
+	`*.w`		g:filetype_w		|ft-cweb-syntax|
 
 For a few filetypes the global variable is used only when the filetype could
 not be detected:
-	*.r		g:filetype_r	|ft-rexx-syntax|
+	`*.r`		g:filetype_r	|ft-rexx-syntax|
 
 							*filetype-ignore*
 To avoid that certain files are being inspected, the g:ft_ignore_pat variable
@@ -356,7 +365,7 @@ ways to change this:
    You must create a new filetype plugin in a directory early in
    'runtimepath'.  For Unix, for example you could use this file: >
 	vim ~/.config/nvim/ftplugin/fortran.vim
-<  You can set those settings and mappings that you would like to add.  Note
+<   You can set those settings and mappings that you would like to add.  Note
    that the global plugin will be loaded after this, it may overrule the
    settings that you do here.  If this is the case, you need to use one of the
    following two methods.
@@ -365,7 +374,7 @@ ways to change this:
    You must put the copy in a directory early in 'runtimepath'.  For Unix, for
    example, you could do this: >
 	cp $VIMRUNTIME/ftplugin/fortran.vim ~/.config/nvim/ftplugin/fortran.vim
-<  Then you can edit the copied file to your liking.  Since the b:did_ftplugin
+<   Then you can edit the copied file to your liking.  Since the b:did_ftplugin
    variable will be set, the global plugin will not be loaded.
    A disadvantage of this method is that when the distributed plugin gets
    improved, you will have to copy and modify it again.
@@ -374,17 +383,43 @@ ways to change this:
    You must create a new filetype plugin in a directory from the end of
    'runtimepath'.  For Unix, for example, you could use this file: >
 	vim ~/.config/nvim/after/ftplugin/fortran.vim
-<  In this file you can change just those settings that you want to change.
+<   In this file you can change just those settings that you want to change.
 
 ==============================================================================
 3.  Docs for the default filetype plugins.		*ftplugin-docs*
+
+
+					*plugin_exec* *g:plugin_exec*
+Enable executing of external commands.  This was done historically for e.g.
+the perl filetype plugin (and a few others) to set the search path.
+Disabled by default for security reasons: >
+	:let g:plugin_exec = 1
+It is also possible to enable this only for certain filetypes: >
+	:let g:<filetype>_exec = 1
+So to enable this only for ruby, set the following variable: >
+	:let g:ruby_exec = 1
+
+If both, the global `plugin_exec` and the `<filetype>_exec` specific variable
+are set, the filetype specific variable should have precedent.
+
+
+ASCIIDOC						*ft-asciidoc-plugin*
+
+To enable |folding| use this: >
+	let g:asciidoc_folding = 1
+
+To disable nesting of folded headers use this: >
+	let g:asciidoc_foldnested = 0
+
+To disable folding everything under the title use this: >
+	let asciidoc_fold_under_title = 0
 
 
 AWK							*ft-awk-plugin*
 
 Support for features specific to GNU Awk, like @include, can be enabled by
 setting: >
-	let g:awk_is_gawk = 1
+	:let g:awk_is_gawk = 1
 
 
 CHANGELOG						*ft-changelog-plugin*
@@ -439,7 +474,7 @@ g:changelog_new_date_format
 				%%	insert a single '%' character
 				%d	insert the date from above
 				%u	insert the user from above
-                                %p	insert result of b:changelog_entry_prefix
+				%p	insert result of b:changelog_entry_prefix
 				%c	where to position cursor when done
 			The default is "%d  %u\n\n\t* %p%c\n\n", which produces
 			something like (| is where cursor will be, unless at
@@ -453,7 +488,7 @@ g:changelog_new_entry_format
 			The format used when creating a new entry.
 			The following table describes special tokens in the
 			string:
-                                %p	insert result of b:changelog_entry_prefix
+				%p	insert result of b:changelog_entry_prefix
 				%c	where to position cursor when done
 			The default is "\t*%c", which produces something
 			similar to >
@@ -512,8 +547,9 @@ FORTRAN							*ft-fortran-plugin*
 Options:
 'expandtab'	is switched on to avoid tabs as required by the Fortran
 		standards unless the user has set fortran_have_tabs in vimrc.
-'textwidth'	is set to 72 for fixed source format as required by the
-		Fortran standards and to 80 for free source format.
+'textwidth'	is set to 80 for fixed source format whereas it is set to 132
+		for free source format. Setting the fortran_extended_line_length
+		variable increases the width to 132 for fixed source format.
 'formatoptions' is set to break code and comment lines and to preserve long
 		lines.  You can format comments with |gq|.
 For further discussion of fortran_have_tabs and the method used for the
@@ -554,6 +590,37 @@ The mapping can be disabled with: >
 	let g:no_gprof_maps = 1
 
 
+JAVA							*ft-java-plugin*
+
+Whenever the variable "g:ftplugin_java_source_path" is defined and its value
+is a filename whose extension is either ".jar" or ".zip", e.g.: >
+	let g:ftplugin_java_source_path = '/path/to/src.jar'
+	let g:ftplugin_java_source_path = '/path/to/src.zip'
+<
+and the |zip| plugin has already been sourced, the |gf| command can be used to
+open the archive and the |n| command can be used to look for the selected type
+and the <Return> key can be used to load a listed file.
+
+Note that the effect of using the "gf" command WITHIN a buffer loaded with the
+Zip plugin depends on the version of the Zip plugin.  For the Zip plugin
+versions that do not support Jar type archives, consider creating symbolic
+links with the ".zip" extension for each Jar archive of interest and assigning
+any such file to the variable from now on.
+
+Otherwise, for the defined variable "g:ftplugin_java_source_path", the local
+value of the 'path' option will be further modified by prefixing the value of
+the variable, e.g.: >
+	let g:ftplugin_java_source_path = $JDK_SRC_PATH
+	let &l:path = g:ftplugin_java_source_path . ',' . &l:path
+<
+and the "gf" command can be used on a fully-qualified type to look for a file
+in the "path" and to try to load it.
+
+Remember to manually trigger the |FileType| event from a buffer with a Java
+file loaded in it each time after assigning a new value to the variable: >
+	doautocmd FileType
+<
+
 MAIL							*ft-mail-plugin*
 
 Options:
@@ -593,8 +660,10 @@ Man                       Open the manpage for the <cWORD> (man buffers)
                           or <cword> (non-man buffers) under the cursor.
 Man!                      Display the current buffer contents as a manpage.
 
-|:Man| accepts command modifiers. For example, to use a vertical split: >
+|:Man| accepts command modifiers. For example, to use a vertical split: >vim
      :vertical Man printf
+To reuse the current window: >vim
+     :hide Man printf
 
 Local mappings:
 K or CTRL-]               Jump to the manpage for the <cWORD> under the
@@ -614,14 +683,14 @@ Variables:
                           empty. Enabled by default. Set |FALSE| to enable soft
                           wrapping.
 
-To use Nvim as a manpager: >
+To use Nvim as a manpager: >sh
      export MANPAGER='nvim +Man!'
 
 Note that when running `man` from the shell and with that `MANPAGER` in your
-environment, `man` will pre-format the manpage using `groff`. Thus, Neovim
+environment, `man` will pre-format the manpage using `groff`. Thus, Nvim
 will inevitably display the manual page as it was passed to it from stdin. One
 of the caveats of this is that the width will _always_ be hard-wrapped and not
-soft wrapped as with `g:man_hardwrap=0`. You can set in your environment: >
+soft wrapped as with `g:man_hardwrap=0`. You can set in your environment: >sh
      export MANWIDTH=999
 
 So `groff`'s pre-formatting output will be the same as with `g:man_hardwrap=0` i.e soft-wrapped.
@@ -629,6 +698,10 @@ So `groff`'s pre-formatting output will be the same as with `g:man_hardwrap=0` i
 To disable bold highlighting: >
      :highlight link manBold Normal
 
+An alternative to using `MANPAGER` in shell can be redefined `man`, for example: >sh
+     man() {
+          nvim "+hide Man $1"
+     }
 
 MARKDOWN                                                *ft-markdown-plugin*
 
@@ -663,6 +736,19 @@ To disable this behavior, set the following variable in your vimrc: >
 
 	let g:python_recommended_style = 0
 
+QUERY					                *ft-query-plugin*
+
+
+Linting of treesitter queries for installed parsers using
+|vim.treesitter.query.lint()| is enabled by default on `BufEnter` and
+`BufWrite`. To change the events that trigger linting, use >lua
+
+	vim.g.query_lint_on = { 'InsertLeave', 'TextChanged' }
+<
+To disable linting completely, set >lua
+
+	vim.g.query_lint_on = {}
+<
 
 QF QUICKFIX					    *qf.vim* *ft-qf-plugin*
 
@@ -703,6 +789,14 @@ To enable this behavior, set the following variable in your vimrc: >
 	let g:rst_style = 1
 
 
+RNOWEB							      *ft-rnoweb-plugin*
+
+The 'formatexpr' option is set dynamically with different values for R code
+and for LaTeX code. If you prefer that 'formatexpr' is not set, add to your
+|vimrc|: >
+	let rnw_dynamic_comments = 0
+
+
 RPM SPEC						*ft-spec-plugin*
 
 Since the text for this plugin is rather long it has been put in a separate
@@ -711,7 +805,7 @@ file: |pi_spec.txt|.
 
 SHADA							*ft-shada*
 
-Allows editing binary |shada-file|s in a nice way.  Opened binary files are 
+Allows editing binary |shada-file|s in a nice way.  Opened binary files are
 displayed in the following format: >
 
     Type with timestamp YYYY-mm-ddTHH:MM:SS:
@@ -726,31 +820,31 @@ displayed in the following format: >
       # Unexpected type: type instead of map
       = {msgpack-value}
 
-Filetype plugin defines all |Cmd-event|s.  Defined |SourceCmd| event makes 
-"source file.shada" be equivalent to "|:rshada| file.shada".  |BufWriteCmd|, 
-|FileWriteCmd| and |FileAppendCmd| events are affected by the following 
+Filetype plugin defines all |Cmd-event|s.  Defined |SourceCmd| event makes
+"source file.shada" be equivalent to "|:rshada| file.shada".  |BufWriteCmd|,
+|FileWriteCmd| and |FileAppendCmd| events are affected by the following
 settings:
 
-*g:shada#keep_old_header*	Boolean, if set to false all header entries 
+*g:shada#keep_old_header*	Boolean, if set to false all header entries
 				are ignored when writing.  Defaults to 1.
-*g:shada#add_own_header*	Boolean, if set to true first written entry 
-				will always be header entry with two values in 
-				a map with attached data: |v:version| attached 
-				to "version" key and "shada.vim" attached to 
+*g:shada#add_own_header*	Boolean, if set to true first written entry
+				will always be header entry with two values in
+				a map with attached data: |v:version| attached
+				to "version" key and "shada.vim" attached to
 				"generator" key.  Defaults to 1.
 
 Format description:
 
-1. `#` starts a comment.  Lines starting with space characters and then `#` 
-   are ignored.  Plugin may only add comment lines to indicate some errors in 
-   ShaDa format.  Lines containing no non-whitespace characters are also 
+1. `#` starts a comment.  Lines starting with space characters and then `#`
+   are ignored.  Plugin may only add comment lines to indicate some errors in
+   ShaDa format.  Lines containing no non-whitespace characters are also
    ignored.
-2. Each entry starts with line that has format "{type} with timestamp 
-   {timestamp}:". {timestamp} is |strftime()|-formatted string representing 
+2. Each entry starts with line that has format "{type} with timestamp
+   {timestamp}:". {timestamp} is |strftime()|-formatted string representing
    actual Unix timestamp value. First strftime() argument is equal to
-   `%Y-%m-%dT%H:%M:%S`.  When writing this timestamp is parsed using 
-   |msgpack#strptime()|, with caching (it remembers which timestamp produced 
-   particular strftime() output and uses this value if you did not change 
+   `%Y-%m-%dT%H:%M:%S`.  When writing this timestamp is parsed using
+   |msgpack#strptime()|, with caching (it remembers which timestamp produced
+   particular strftime() output and uses this value if you did not change
    timestamp). {type} is one of
     1 - Header
     2 - Search pattern
@@ -765,28 +859,28 @@ Format description:
    11 - Change
     * - Unknown (0x{type-hex})
 
-   Each type may be represented using Unknown entry: "Jump with timestamp ..." 
+   Each type may be represented using Unknown entry: "Jump with timestamp ..."
    is the same as "Unknown (0x8) with timestamp ....".
 3. After header there is one of the following lines:
-   1. "  % Key__  Description__  Value": map header.  After mapping header 
-      follows a table which may contain comments and lines consisting of 
-      "  +", key, description and |{msgpack-value}|.  Key is separated by at 
-      least two spaces with description, description is separated by at least 
-      two spaces with the value.  Each key in the map must be at most as wide 
-      as "Key__" header: "Key" allows at most 3-byte keys, "Key__" allows at 
-      most 5-byte keys.  If keys actually occupy less bytes then the rest is 
-      filled with spaces.  Keys cannot be empty, end with spaces, contain two 
-      consequent spaces inside of them or contain multibyte characters (use 
-      "=" format if you need this).  Descriptions have the same restrictions 
-      on width and contents, except that empty descriptions are allowed.  
+   1. "  % Key__  Description__  Value": map header.  After mapping header
+      follows a table which may contain comments and lines consisting of
+      "  +", key, description and |{msgpack-value}|.  Key is separated by at
+      least two spaces with description, description is separated by at least
+      two spaces with the value.  Each key in the map must be at most as wide
+      as "Key__" header: "Key" allows at most 3-byte keys, "Key__" allows at
+      most 5-byte keys.  If keys actually occupy less bytes then the rest is
+      filled with spaces.  Keys cannot be empty, end with spaces, contain two
+      consequent spaces inside of them or contain multibyte characters (use
+      "=" format if you need this).  Descriptions have the same restrictions
+      on width and contents, except that empty descriptions are allowed.
       Description column may be omitted.
 
-      When writing description is ignored.  Keys with values |msgpack#equal| 
-      to default ones are ignored.  Order of keys is preserved.  All keys are 
+      When writing description is ignored.  Keys with values |msgpack#equal|
+      to default ones are ignored.  Order of keys is preserved.  All keys are
       treated as strings (not binary strings).
 
-      Note: specifically for buffer list entries it is allowed to have more 
-      then one map header.  Each map header starts a new map entry inside 
+      Note: specifically for buffer list entries it is allowed to have more
+      then one map header.  Each map header starts a new map entry inside
       buffer list because ShaDa buffer list entry is an array of maps.  I.e. >
 
         Buffer list with timestamp 1970-01-01T00:00:00:
@@ -814,7 +908,7 @@ Format description:
         Buffer list with timestamp 1970-01-01T00:00:00:
           = [{="f": "/foo"}, {="f": "/bar"}]
 <
-      Note 2: specifically for register entries special syntax for arrays was 
+      Note 2: specifically for register entries special syntax for arrays was
       designed: >
 
         Register with timestamp 1970-01-01T00:00:00:
@@ -829,10 +923,10 @@ Format description:
           % Key  Description  Value
           + rc   contents     ["line1", "line2"]
 <
-      Such syntax is automatically used if array representation appears to be 
+      Such syntax is automatically used if array representation appears to be
       too lengthy.
-   2. "  @  Description__  Value": array header.  Same as map, but key is 
-      omitted and description cannot be omitted.  Array entries start with 
+   2. "  @  Description__  Value": array header.  Same as map, but key is
+      omitted and description cannot be omitted.  Array entries start with
       "  -". Example: >
 
         History entry with timestamp 1970-01-01T00:00:00:
@@ -847,8 +941,8 @@ Format description:
           = [SEARCH, "foo", '/']
 <
       Note: special array syntax for register entries is not recognized here.
-   3. "  = {msgpack-value}": raw values.  |{msgpack-value}| in this case may 
-      have absolutely any type.  Special array syntax for register entries is 
+   3. "  = {msgpack-value}": raw values.  |{msgpack-value}| in this case may
+      have absolutely any type.  Special array syntax for register entries is
       not recognized here as well.
 
 
@@ -866,7 +960,7 @@ file: |ft_sql.txt|.
 
 TEX						*ft-tex-plugin* *g:tex_flavor*
 
-If the first line of a *.tex file has the form >
+If the first line of a `*.tex` file has the form >
 	%&<format>
 then this determined the file type:  plaintex (for plain TeX), context (for
 ConTeXt), or tex (for LaTeX).  Otherwise, the file is searched for keywords to

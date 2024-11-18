@@ -167,7 +167,7 @@ The initial height of the help window can be set with the 'helpheight' option
 						*help-buffer-options*
 When the help buffer is created, several local options are set to make sure
 the help text is displayed as it was intended:
-    'iskeyword'		nearly all ASCII chars except ' ', '*', '"' and '|'
+    'iskeyword'		nearly all ASCII chars except ' ', "*", '"' and '|'
     'foldmethod'	"manual"
     'tabstop'		8
     'arabic'		off
@@ -305,7 +305,7 @@ Hints for translators:
   using the "tag@en" notation.
 - Make a package with all the files and the tags file available for download.
   Users can drop it in one of the "doc" directories and start use it.
-  Report this to Bram, so that he can add a link on www.vim.org.
+  Report to the development team, so they can add a link on www.vim.org.
 - Use the |:helptags| command to generate the tags files.  It will find all
   languages in the specified directory.
 
@@ -317,9 +317,9 @@ standard Vim help files, except for the first line.  If you are writing a new
 help file it's best to copy one of the existing files and use it as a
 template.
 
-The first line in a help file should have the following format:
+The first line in a help file should have the following format: >
 
-*plugin_name.txt*	{short description of the plugin}
+	*plugin_name.txt*	{short description of the plugin}
 
 The first field is a help tag where ":help plugin_name" will jump to.  The
 remainder of the line, after a Tab, describes the plugin purpose in a short
@@ -357,10 +357,11 @@ parameter, surround it in backticks, eg. `~/.path/to/init.vim`.
 
 HIGHLIGHTING
 
-To define a column heading, use a tilde character at the end of the line.
-This will highlight the column heading in a different color.  E.g.
+To define a column heading, use a tilde character at the end of the line,
+preceded by a space. This will highlight the column heading in a different
+color.  E.g.
 
-Column heading~
+Column heading ~
 
 To separate sections in a help file, place a series of '=' characters in a
 line starting from the first column.  The section separator line is highlighted
@@ -383,8 +384,8 @@ The following are highlighted differently in a Vim help file:
 
 The word "Note", "Notes" and similar automagically receive distinctive
 highlighting.  So do these:
-	*Todo	something to do
-	*Error	something wrong
+	Todo	something to do
+	Error	something wrong
 
 You can find the details in $VIMRUNTIME/syntax/help.vim
 

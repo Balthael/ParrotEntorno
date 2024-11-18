@@ -3,26 +3,9 @@ local M = {}
 --- Prompts the user to pick from a list of items, allowing arbitrary (potentially asynchronous)
 --- work until `on_choice`.
 ---
----@param items table Arbitrary items
----@param opts table Additional options
----     - prompt (string|nil)
----               Text of the prompt. Defaults to `Select one of:`
----     - format_item (function item -> text)
----               Function to format an
----               individual item from `items`. Defaults to `tostring`.
----     - kind (string|nil)
----               Arbitrary hint string indicating the item shape.
----               Plugins reimplementing `vim.ui.select` may wish to
----               use this to infer the structure or semantics of
----               `items`, or the context in which select() was called.
----@param on_choice function ((item|nil, idx|nil) -> ())
----               Called once the user made a choice.
----               `idx` is the 1-based index of `item` within `items`.
----               `nil` if the user aborted the dialog.
----
----
 --- Example:
---- <pre>lua
+---
+--- ```lua
 --- vim.ui.select({ 'tabs', 'spaces' }, {
 ---     prompt = 'Select tabs or spaces:',
 ---     format_item = function(item)
@@ -35,7 +18,24 @@ local M = {}
 ---         vim.o.expandtab = false
 ---     end
 --- end)
---- </pre>
+--- ```
+---
+---@param items any[] Arbitrary items
+---@param opts table Additional options
+---     - prompt (string|nil)
+---               Text of the prompt. Defaults to `Select one of:`
+---     - format_item (function item -> text)
+---               Function to format an
+---               individual item from `items`. Defaults to `tostring`.
+---     - kind (string|nil)
+---               Arbitrary hint string indicating the item shape.
+---               Plugins reimplementing `vim.ui.select` may wish to
+---               use this to infer the structure or semantics of
+---               `items`, or the context in which select() was called.
+---@param on_choice fun(item: any|nil, idx: integer|nil)
+---               Called once the user made a choice.
+---               `idx` is the 1-based index of `item` within `items`.
+---               `nil` if the user aborted the dialog.
 function M.select(items, opts, on_choice)
   vim.validate({
     items = { items, 'table', false },
@@ -44,7 +44,7 @@ function M.select(items, opts, on_choice)
   opts = opts or {}
   local choices = { opts.prompt or 'Select one of:' }
   local format_item = opts.format_item or tostring
-  for i, item in pairs(items) do
+  for i, item in ipairs(items) do
     table.insert(choices, string.format('%d: %s', i, format_item(item)))
   end
   local choice = vim.fn.inputlist(choices)
@@ -58,7 +58,15 @@ end
 --- Prompts the user for input, allowing arbitrary (potentially asynchronous) work until
 --- `on_confirm`.
 ---
----@param opts table Additional options. See |input()|
+--- Example:
+---
+--- ```lua
+--- vim.ui.input({ prompt = 'Enter value for shiftwidth: ' }, function(input)
+---     vim.o.shiftwidth = tonumber(input)
+--- end)
+--- ```
+---
+---@param opts table? Additional options. See |input()|
 ---     - prompt (string|nil)
 ---               Text of the prompt
 ---     - default (string|nil)
@@ -77,15 +85,9 @@ end
 ---               `input` is what the user typed (it might be
 ---               an empty string if nothing was entered), or
 ---               `nil` if the user aborted the dialog.
----
---- Example:
---- <pre>lua
---- vim.ui.input({ prompt = 'Enter value for shiftwidth: ' }, function(input)
----     vim.o.shiftwidth = tonumber(input)
---- end)
---- </pre>
 function M.input(opts, on_confirm)
   vim.validate({
+    opts = { opts, 'table', true },
     on_confirm = { on_confirm, 'function', false },
   })
 
@@ -102,6 +104,67 @@ function M.input(opts, on_confirm)
   else
     on_confirm(input)
   end
+end
+
+--- Opens `path` with the system default handler (macOS `open`, Windows `explorer.exe`, Linux
+--- `xdg-open`, …), or returns (but does not show) an error message on failure.
+---
+--- Expands "~/" and environment variables in filesystem paths.
+---
+--- Examples:
+---
+--- ```lua
+--- -- Asynchronous.
+--- vim.ui.open("https://neovim.io/")
+--- vim.ui.open("~/path/to/file")
+--- -- Synchronous (wait until the process exits).
+--- local cmd, err = vim.ui.open("$VIMRUNTIME")
+--- if cmd then
+---   cmd:wait()
+--- end
+--- ```
+---
+---@param path string Path or URL to open
+---
+---@return vim.SystemObj|nil # Command object, or nil if not found.
+---@return nil|string # Error message on failure, or nil on success.
+---
+---@see |vim.system()|
+function M.open(path)
+  vim.validate({
+    path = { path, 'string' },
+  })
+  local is_uri = path:match('%w+:')
+  if not is_uri then
+    path = vim.fs.normalize(path)
+  end
+
+  local cmd --- @type string[]
+  local opts --- @type vim.SystemOpts
+
+  opts = { text = true, detach = true }
+
+  if vim.fn.has('mac') == 1 then
+    cmd = { 'open', path }
+  elseif vim.fn.has('win32') == 1 then
+    if vim.fn.executable('rundll32') == 1 then
+      cmd = { 'rundll32', 'url.dll,FileProtocolHandler', path }
+    else
+      return nil, 'vim.ui.open: rundll32 not found'
+    end
+  elseif vim.fn.executable('xdg-open') == 1 then
+    cmd = { 'xdg-open', path }
+    opts.stdout = false
+    opts.stderr = false
+  elseif vim.fn.executable('wslview') == 1 then
+    cmd = { 'wslview', path }
+  elseif vim.fn.executable('explorer.exe') == 1 then
+    cmd = { 'explorer.exe', path }
+  else
+    return nil, 'vim.ui.open: no handler found (tried: wslview, explorer.exe, xdg-open)'
+  end
+
+  return vim.system(cmd, opts), nil
 end
 
 return M

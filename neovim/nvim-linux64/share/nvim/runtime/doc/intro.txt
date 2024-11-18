@@ -22,8 +22,7 @@ is not located in the default place.  You can jump to subjects like with tags:
 Use CTRL-] to jump to a subject under the cursor, use CTRL-T to jump back.
 
 							*pronounce*
-Vim is pronounced as one word, like Jim.  So Nvim is N-Jim, which sounds like
-"Ninja".  Starting Nvim is like performing a roundhouse kick.
+Vim is pronounced as one word, like Jim.  So Nvim is "En-Vim", two syllables.
 
 This manual is a reference for all Nvim editor and API features.  It is not an
 introduction; instead for beginners, there is a hands-on |tutor| and a user
@@ -50,10 +49,9 @@ For more information try one of these:
 ==============================================================================
 Nvim on the interwebs					*internet*
 
-			*www* *faq* *distribution* *download*
+			*www* *distribution* *download*
 
 	Nvim home page:	  https://neovim.io/
-	Nvim FAQ:	  https://github.com/neovim/neovim/wiki/FAQ
 	Downloads:	  https://github.com/neovim/neovim/releases
 	Vim FAQ:	  https://vimhelp.org/vim_faq.txt.html
 
@@ -71,11 +69,11 @@ If Nvim crashes, try to get a backtrace.  See |debug.txt|.
 Sponsor Vim/Nvim development				*sponsor* *register*
 
 Fixing bugs and adding new features takes a lot of time and effort.  To show
-your appreciation for the work and motivate Bram and others to continue
-working on Vim please send a donation.
+your appreciation for the work and motivate developers to continue working on
+Vim please send a donation.
 
-Since Bram is back to a paid job the money will now be used to help children
-in Uganda.  See |uganda|.  But at the same time donations increase Bram's
+The money you donated will be mainly used to help children in Uganda.  See
+|uganda|.  But at the same time donations increase the development team
 motivation to keep working on Vim!
 
 For the most recent information about sponsoring look on the Vim web site:
@@ -90,7 +88,7 @@ Nvim development is funded separately from Vim:
 ==============================================================================
 Credits							*credits*
 
-Most of Vim was written by Bram Moolenaar <Bram@vim.org> |Bram-Moolenaar|
+Most of Vim was written by Bram Moolenaar <Bram@vim.org> |Bram-Moolenaar|.
 
 Parts of the documentation come from several Vi manuals, written by:
 	W.N. Joy
@@ -121,7 +119,7 @@ Vim would never have become what it is now, without the help of these people!
 	Eric Fischer		Mac port, 'cindent', and other improvements
 	Benji Fisher		Answering lots of user questions
 	Bill Foster		Athena GUI port (later removed)
-	Google			Lets me work on Vim one day a week
+	Google			Let Bram work on Vim one day a week
 	Loic Grenie		xvim (ideas for multi windows version)
 	Sven Guckes		Vim promoter and previous WWW page maintainer
 	Darren Hiebert		Exuberant ctags
@@ -531,16 +529,15 @@ CTRL-O in Insert mode you get a beep but you are still in Insert mode, type
 <Esc> again.
 
 							*i_esc*
-		TO mode						    ~
-		Normal	Visual	Select	Insert	  Replace   Cmd-line  Ex ~
-FROM mode								 ~
-Normal			v V ^V	  `*4`	 *1	   R gR     : / ? !   Q
-Visual		 `*2`		  ^G	 c C	    --	      :       --
-Select		 `*5`	^O ^G		 `*6`	    --	      --      --
-Insert		 <Esc>	  --	  --		  <Insert>    --      --
-Replace		 <Esc>	  --	  --	<Insert>	      --      --
-Command-line	 `*3`	  --	  --	 :start	    --		      --
-Ex		 :vi	  --	  --	 --	    --	      --
+ FROM mode	TO mode						    ~
+		Normal	Visual	Select	Insert	  Replace   Cmd-line  Ex >
+ Normal			v V ^V	  *4	 *1	   R gR     : / ? !   Q
+ Visual		 *2		  ^G	 c C	    --	      :       --
+ Select		 *5	^O ^G		 *6	    --	      --      --
+ Insert		 <Esc>	  --	  --		  <Insert>    --      --
+ Replace	 <Esc>	  --	  --	<Insert>	      --      --
+ Command-line	 `*3`	  --	  --	 :start	    --		      --
+ Ex		 :vi	  --	  --	 --	    --	      --
 
 -- not possible
 

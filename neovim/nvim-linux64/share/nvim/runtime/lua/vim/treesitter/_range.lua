@@ -2,6 +2,10 @@ local api = vim.api
 
 local M = {}
 
+---@class Range2
+---@field [1] integer start row
+---@field [2] integer end row
+
 ---@class Range4
 ---@field [1] integer start row
 ---@field [2] integer start column
@@ -16,7 +20,7 @@ local M = {}
 ---@field [5] integer end column
 ---@field [6] integer end bytes
 
----@alias Range Range4|Range6
+---@alias Range Range2|Range4|Range6
 
 ---@private
 ---@param a_row integer
@@ -111,6 +115,9 @@ end
 ---@param r Range
 ---@return integer, integer, integer, integer
 function M.unpack4(r)
+  if #r == 2 then
+    return r[1], 0, r[2], 0
+  end
   local off_1 = #r == 6 and 1 or 0
   return r[1], r[2], r[3 + off_1], r[4 + off_1]
 end
@@ -143,6 +150,29 @@ function M.contains(r1, r2)
   return true
 end
 
+--- @param source integer|string
+--- @param index integer
+--- @return integer
+local function get_offset(source, index)
+  if index == 0 then
+    return 0
+  end
+
+  if type(source) == 'number' then
+    return api.nvim_buf_get_offset(source, index)
+  end
+
+  local byte = 0
+  local next_offset = source:gmatch('()\n')
+  local line = 1
+  while line <= index do
+    byte = next_offset() --[[@as integer]]
+    line = line + 1
+  end
+
+  return byte
+end
+
 ---@private
 ---@param source integer|string
 ---@param range Range
@@ -152,19 +182,10 @@ function M.add_bytes(source, range)
     return range --[[@as Range6]]
   end
 
-  local start_row, start_col, end_row, end_col = range[1], range[2], range[3], range[4]
-  local start_byte = 0
-  local end_byte = 0
+  local start_row, start_col, end_row, end_col = M.unpack4(range)
   -- TODO(vigoux): proper byte computation here, and account for EOL ?
-  if type(source) == 'number' then
-    -- Easy case, this is a buffer parser
-    start_byte = api.nvim_buf_get_offset(source, start_row) + start_col
-    end_byte = api.nvim_buf_get_offset(source, end_row) + end_col
-  elseif type(source) == 'string' then
-    -- string parser, single `\n` delimited string
-    start_byte = vim.fn.byteidx(source, start_col)
-    end_byte = vim.fn.byteidx(source, end_col)
-  end
+  local start_byte = get_offset(source, start_row) + start_col
+  local end_byte = get_offset(source, end_row) + end_col
 
   return { start_row, start_col, start_byte, end_row, end_col, end_byte }
 end

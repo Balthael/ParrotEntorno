@@ -11,7 +11,12 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile', 'StdinReadPost' }, {
     if not vim.api.nvim_buf_is_valid(args.buf) then
       return
     end
-    local ft, on_detect = vim.filetype.match({ filename = args.match, buf = args.buf })
+    local ft, on_detect = vim.filetype.match({
+      -- The unexpanded file name is needed here. #27914
+      -- Neither args.file nor args.match are guaranteed to be unexpanded.
+      filename = vim.fn.bufname(args.buf),
+      buf = args.buf,
+    })
     if not ft then
       -- Generic configuration file used as fallback
       ft = require('vim.filetype.detect').conf(args.file, args.buf)
@@ -21,12 +26,15 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile', 'StdinReadPost' }, {
         end)
       end
     else
-      vim.api.nvim_buf_call(args.buf, function()
-        vim.api.nvim_cmd({ cmd = 'setf', args = { ft } }, {})
-      end)
+      -- on_detect is called before setting the filetype so that it can set any buffer local
+      -- variables that may be used the filetype's ftplugin
       if on_detect then
         on_detect(args.buf)
       end
+
+      vim.api.nvim_buf_call(args.buf, function()
+        vim.api.nvim_cmd({ cmd = 'setf', args = { ft } }, {})
+      end)
     end
   end,
 })
@@ -35,8 +43,7 @@ vim.api.nvim_create_autocmd({ 'BufRead', 'BufNewFile', 'StdinReadPost' }, {
 if not vim.g.did_load_ftdetect then
   vim.cmd([[
   augroup filetypedetect
-  runtime! ftdetect/*.vim
-  runtime! ftdetect/*.lua
+  runtime! ftdetect/*.{vim,lua}
   augroup END
   ]])
 end

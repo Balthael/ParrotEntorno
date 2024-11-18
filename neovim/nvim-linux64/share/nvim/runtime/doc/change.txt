@@ -424,9 +424,17 @@ octal number.
 Note that when 'nrformats' includes "octal", decimal numbers with leading
 zeros cause mistakes, because they can be confused with octal numbers.
 
-Note similarly, when 'nrformats' includes "bin", binary numbers with a leading
-'0x' or '0X' can be interpreted as hexadecimal rather than binary since '0b'
-are valid hexadecimal digits.
+Note similarly, when 'nrformats' includes both "bin" and "hex", binary numbers
+with a leading '0x' or '0X' can be interpreted as hexadecimal rather than
+binary since '0b' are valid hexadecimal digits.  CTRL-A on "0x0b11" results in
+"0x0b12", not "0x0b100".
+When 'nrformats' includes "bin" and doesn't include "hex", CTRL-A on "0b11" in
+"0x0b11" results in "0x0b100".
+
+When the number under the cursor is too big to fit into 64 bits, it will be
+rounded off to the nearest number that can be represented, and the
+addition/subtraction is skipped.  E.g. CTRL-X on 18446744073709551616 results
+in 18446744073709551615.  Same for larger numbers, such as 18446744073709551618.
 
 The CTRL-A command is very useful in a macro.  Example: Use the following
 steps to make a numbered list.
@@ -480,7 +488,7 @@ SHIFTING LINES LEFT OR RIGHT				*shift-left-right*
 			lines to [indent] (default 0).
 
 							*:>*
-:[range]> [flags]	Shift {count} [range] lines one 'shiftwidth' right.
+:[range]> [flags]	Shift [range] lines one 'shiftwidth' right.
 			Repeat '>' for shifting multiple 'shiftwidth's.
 			See |ex-flags| for [flags].
 
@@ -614,9 +622,9 @@ original user.
 			current line only.  When [count] is given, replace in
 			[count] lines, starting with the last line in [range].
 			When [range] is omitted start in the current line.
-							*E939*
-			[count] must be a positive number.  Also see
-			|cmdline-ranges|.
+							*E939* *E1510*
+			[count] must be a positive number (max 2147483647)
+			Also see |cmdline-ranges|.
 
 			See |:s_flags| for [flags].
 			The delimiter doesn't need to be /, see
@@ -1212,13 +1220,13 @@ Vim fills these registers with text from yank and delete commands.
    Numbered register 0 contains the text from the most recent yank command,
 unless the command specified another register with ["x].
    Numbered register 1 contains the text deleted by the most recent delete or
-change command, unless the command specified another register or the text is
-less than one line (the small delete register is used then).  An exception is
-made for the delete operator with these movement commands: |%|, |(|, |)|, |`|,
-|/|, |?|, |n|, |N|, |{| and |}|.  Register "1 is always used then (this is Vi
-compatible).  The "- register is used as well if the delete is within a line.
-Note that these characters may be mapped.  E.g. |%| is mapped by the matchit
-plugin.
+change command (even when the command specified another register), unless the
+text is less than one line (the small delete register is used then).  An
+exception is made for the delete operator with these movement commands: |%|,
+|(|, |)|, |`|, |/|, |?|, |n|, |N|, |{| and |}|.
+Register "1 is always used then (this is Vi compatible).  The "- register is
+used as well if the delete is within a line. Note that these characters may be
+mapped.  E.g. |%| is mapped by the matchit plugin.
    With each successive deletion or change, Vim shifts the previous contents
 of register 1 into register 2, 2 into 3, and so forth, losing the previous
 contents of register 9.
@@ -1283,8 +1291,8 @@ expression (like with the "/" command).
 The expression must evaluate to a String.  A Number is always automatically
 converted to a String.  For the "p" and ":put" command, if the result is a
 Float it's converted into a String.  If the result is a List each element is
-turned into a String and used as a line.  A Dictionary or FuncRef results in
-an error message (use string() to convert).
+turned into a String and used as a line.  A Dictionary is converted into a
+String.  A Funcref results in an error message (use string() to convert).
 
 If the "= register is used for the "p" command, the String is split up at <NL>
 characters.  If the String ends in a <NL>, it is regarded as a linewise
@@ -1486,7 +1494,7 @@ white space).  Three types of comments can be used:
   lines.  An example is this list with dashes.
 - Three-piece comments that have a start string, an end string, and optional
   lines in between.  The strings for the start, middle and end are different.
-  An example is the C style comment:
+  An example is the C style comment: >
 	/*
 	 * this is a C comment
 	 */
@@ -1561,20 +1569,20 @@ When you hit Return in a C-comment, Vim will insert the middle comment leader
 for the new line: " * ".  To close this comment you just have to type "/"
 before typing anything else on the new line.  This will replace the
 middle-comment leader with the end-comment leader and apply any specified
-alignment, leaving just " */".  There is no need to hit Backspace first.
+alignment, leaving just `" */"`.  There is no need to hit Backspace first.
 
 When there is a match with a middle part, but there also is a matching end
 part which is longer, the end part is used.  This makes a C style comment work
 without requiring the middle part to end with a space.
 
 Here is an example of alignment flags at work to make a comment stand out
-(kind of looks like a 1 too). Consider comment string: >
+(kind of looks like a 1 too). Consider comment string: >vim
 	:set comments=sr:/***,m:**,ex-2:******/
-<
+>
                                    /*** ~
                                      **<--right aligned from "r" flag ~
                                      ** ~
-offset 2 spaces for the "-2" flag--->** ~
+ offset 2 spaces for the "-2" flag-->** ~
                                    ******/ ~
 In this case, the first comment was typed, then return was pressed 4 times,
 then "/" was pressed to end the comment.
@@ -1737,10 +1745,10 @@ happens with formatting and auto-wrapping.  Opening a line after a line
 starting with "/*" or "*" and containing "*/", will cause no comment leader to
 be inserted, and the indent of the new line is taken from the line containing
 the start of the comment.
-E.g.:
-    /* ~
-     * Your typical comment. ~
-     */ ~
+E.g.: >
+    /*
+     * Your typical comment.
+     */
     The indent on this line is the same as the start of the above
     comment.
 

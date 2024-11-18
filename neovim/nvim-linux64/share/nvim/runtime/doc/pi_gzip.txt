@@ -12,6 +12,14 @@ The functionality mentioned here is a |standard-plugin|.
 This plugin is only available if 'compatible' is not set.
 You can avoid loading this plugin by setting the "loaded_gzip" variable: >
 	:let loaded_gzip = 1
+<
+							*g:gzip_exec*
+
+For security reasons, one may prevent that Vim runs executables automatically
+when opening a buffer.  This option (default: "1") can be used to prevent
+executing the executables command when set to "0": >
+	:let g:gzip_exec = 0
+<
 
 ==============================================================================
 1. Autocommands						*gzip-autocmd*
@@ -19,7 +27,7 @@ You can avoid loading this plugin by setting the "loaded_gzip" variable: >
 The plugin installs autocommands to intercept reading and writing of files
 with these extensions:
 
-	extension	compression ~
+	extension	compression >
 	*.Z		compress (Lempel-Ziv)
 	*.gz		gzip
 	*.bz2		bzip2

@@ -1,7 +1,8 @@
 " These commands create the option window.
 "
-" Maintainer:	Bram Moolenaar <Bram@vim.org>
-" Last Change:	2022 Dec 16
+" Maintainer:	The Vim Project <https://github.com/vim/vim>
+" Last Change:	2023 Aug 31
+" Former Maintainer:	Bram Moolenaar <Bram@vim.org>
 
 " If there already is an option window, jump to that one.
 let buf = bufnr('option-window')
@@ -305,6 +306,9 @@ call <SID>Header(gettext("displaying text"))
 call <SID>AddOption("scroll", gettext("number of lines to scroll for CTRL-U and CTRL-D"))
 call append("$", "\t" .. s:local_to_window)
 call <SID>OptionL("scr")
+call <SID>AddOption("smoothscroll", gettext("scroll by screen line"))
+call append("$", "\t" .. s:local_to_window)
+call <SID>BinOptionL("sms")
 call <SID>AddOption("scrolloff", gettext("number of screen lines to show around the cursor"))
 call append("$", " \tset so=" . &so)
 call <SID>AddOption("wrap", gettext("long lines wrap"))
@@ -440,6 +444,7 @@ if has("statusline")
   call <SID>AddOption("statusline", gettext("alternate format to be used for a status line"))
   call <SID>OptionG("stl", &stl)
 endif
+call append("$", "\t" .. s:local_to_window)
 call <SID>AddOption("equalalways", gettext("make all windows the same size when adding/removing windows"))
 call <SID>BinOptionG("ea", &ea)
 call <SID>AddOption("eadirection", gettext("in which direction 'equalalways' works: \"ver\", \"hor\" or \"both\""))
@@ -448,6 +453,8 @@ call <SID>AddOption("winheight", gettext("minimal number of lines used for the c
 call append("$", " \tset wh=" . &wh)
 call <SID>AddOption("winminheight", gettext("minimal number of lines used for any window"))
 call append("$", " \tset wmh=" . &wmh)
+call <SID>AddOption("winfixbuf", gettext("keep window focused on a single buffer"))
+call <SID>OptionG("wfb", &wfb)
 call <SID>AddOption("winfixheight", gettext("keep the height of the window"))
 call append("$", "\t" .. s:local_to_window)
 call <SID>BinOptionL("wfh")
@@ -476,7 +483,7 @@ call <SID>OptionG("swb", &swb)
 call <SID>AddOption("splitbelow", gettext("a new window is put below the current one"))
 call <SID>BinOptionG("sb", &sb)
 call <SID>AddOption("splitkeep", gettext("determines scroll behavior for split windows"))
-call <SID>BinOptionG("spk", &spk)
+call <SID>OptionG("spk", &spk)
 call <SID>AddOption("splitright", gettext("a new window is put right of the current one"))
 call <SID>BinOptionG("spr", &spr)
 call <SID>AddOption("scrollbind", gettext("this window scrolls together with other bound windows"))

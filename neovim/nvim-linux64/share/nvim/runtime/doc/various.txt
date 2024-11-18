@@ -14,6 +14,7 @@ Various commands					*various*
 							*CTRL-L*
 CTRL-L			Clears and redraws the screen.  The redraw may happen
 			later, after processing typeahead.
+			See also |nvim__redraw()|.
 							*CTRL-L-default*
 			By default, also clears search highlighting
 			|:nohlsearch| and updates diffs |:diffupdate|.
@@ -21,6 +22,7 @@ CTRL-L			Clears and redraws the screen.  The redraw may happen
 
 							*:mod* *:mode*
 :mod[e]			Clears and redraws the screen.
+			See also |nvim__redraw()|.
 
 							*:redr* *:redraw*
 :redr[aw][!]		Redraws pending screen updates now, or the entire
@@ -28,6 +30,7 @@ CTRL-L			Clears and redraws the screen.  The redraw may happen
 			|:mode| or |CTRL-L|.
 			Useful to update the screen during a script or
 			function (or a mapping if 'lazyredraw' set).
+			See also |nvim__redraw()|.
 
 						*:redraws* *:redrawstatus*
 :redraws[tatus][!]	Redraws the status line and window bar of the current
@@ -35,11 +38,12 @@ CTRL-L			Clears and redraws the screen.  The redraw may happen
 			included. Redraws the commandline instead if it contains
 			the 'ruler'. Useful if 'statusline' or 'winbar' includes
 			an item that doesn't cause automatic updating.
+			See also |nvim__redraw()|.
 
 						*:redrawt* *:redrawtabline*
 :redrawt[abline]	Redraw the tabline.  Useful to update the tabline when
 			'tabline' includes an item that doesn't trigger
-			automatic updating.
+			automatic updating. See also |nvim__redraw()|.
 
 							*N<Del>*
 <Del>			When entering a number: Remove the last digit.
@@ -88,17 +92,23 @@ g8			Print the hex values of the bytes used in the
 
 							*8g8*
 8g8			Find an illegal UTF-8 byte sequence at or after the
-			cursor.  This works in two situations:
-			1. when 'encoding' is any 8-bit encoding
-			2. when 'encoding' is "utf-8" and 'fileencoding' is
-			   any 8-bit encoding
-			Thus it can be used when editing a file that was
-			supposed to be UTF-8 but was read as if it is an 8-bit
-			encoding because it contains illegal bytes.
+			cursor.
+			Can be used when editing a file that was supposed to
+			be UTF-8 but was read as if it is an 8-bit encoding
+			because it contains illegal bytes.
 			Does not wrap around the end of the file.
 			Note that when the cursor is on an illegal byte or the
 			cursor is halfway through a multibyte character the
 			command won't move the cursor.
+
+							*gx*
+gx			Opens the current filepath or URL (decided by
+			|<cfile>|, 'isfname') at cursor using the system
+			default handler, by calling |vim.ui.open()|.
+
+							*v_gx*
+{Visual}gx		Opens the selected text using the system default
+			handler, by calling |vim.ui.open()|.
 
 						*:p* *:pr* *:print* *E749*
 :[range]p[rint] [flags]
@@ -174,8 +184,8 @@ g8			Print the hex values of the bytes used in the
 			Like ":z" or ":z!", but number the lines.
 
 							*:=*
-:=			Without arg: Print the last line number.
-			with args: equivalent to `:lua ={expr}`. see |:lua|
+:= [args]		Without [args]: prints the last line number.
+			With [args]: equivalent to `:lua ={expr}`. see |:lua|
 
 :{range}=		Prints the last line number in {range}.  For example,
 			this prints the current line number: >
@@ -199,7 +209,7 @@ g8			Print the hex values of the bytes used in the
 			This implies that an insert command must be completed
 			(to start Insert mode, see |:startinsert|).  A ":"
 			command must be completed as well.  And you can't use
-			"Q" or "gQ" to start Ex mode.
+			"gQ" to start Ex mode.
 
 			The display is not updated while ":normal" is busy.
 
@@ -242,6 +252,10 @@ g8			Print the hex values of the bytes used in the
 
 			Fails if changes have been made to the current buffer,
 			unless 'hidden' is set.
+
+			If {cmd} is omitted, and the 'shell' job exits with no
+			error, the buffer is closed automatically
+			|default-autocmds|.
 
 			To enter |Terminal-mode| automatically: >
 			      autocmd TermOpen * startinsert
@@ -489,6 +503,9 @@ user command or autocommand, the script in which it was defined is reported.
 <			- When 'keywordprg' is equal to "man -s", a [count]
 			  before "K" is inserted after the "-s".  If there is
 			  no count, the "-s" is removed.
+							       *K-lsp-default*
+			- The Nvim |LSP| client sets K to show LSP "hover"
+			  feature. |lsp-defaults|
 
 							*v_K*
 {Visual}K		Like "K", but use the visually highlighted text for
@@ -544,5 +561,47 @@ LessInitFunc in your vimrc, for example: >
 	  set nocursorcolumn nocursorline
 	endfunc
 <
+==============================================================================
+3. Commenting							*commenting*
+
+Nvim supports commenting and uncommenting of lines based on 'commentstring'.
+
+Acting on a single line behaves as follows:
+- If the line matches 'commentstring', the comment markers are removed (e.g.
+  `/*foo*/` is transformed to `foo`).
+- Otherwise the comment markers are added to the current line (e.g. `foo` is
+  transformed to `/*foo*/`). Blank lines are ignored.
+
+Acting on multiple lines behaves as follows:
+- If each affected non-blank line matches 'commentstring', then all comment
+  markers are removed.
+- Otherwise all affected lines are converted to comments; blank lines are
+  transformed to empty comments (e.g. `/**/`). Comment markers are aligned to
+  the least indented line.
+
+Matching 'commentstring' does not account for whitespace in comment markers.
+Removing comment markers is first attempted exactly, with fallback to using
+markers trimmed from whitespace.
+
+If the filetype of the buffer is associated with a language for which a
+|treesitter| parser is installed, then |vim.filetype.get_option()| is called
+to look up the value of 'commentstring' corresponding to the cursor position.
+(This can be different from the buffer's 'commentstring' in case of
+|treesitter-language-injections|.)
+
+							*gc* *gc-default*
+gc{motion}		Comment or uncomment lines covered by {motion}.
+
+							*gcc* *gcc-default*
+gcc			Comment or uncomment [count] lines starting at cursor.
+
+							*v_gc* *v_gc-default*
+{Visual}gc		Comment or uncomment the selected line(s).
+
+							*o_gc* *o_gc-default*
+gc			Text object for the largest contiguous block of
+			non-blank commented lines around the cursor (e.g.
+			`gcgc` uncomments a comment block; `dgc` deletes it).
+			Works only in Operator-pending mode.
 
  vim:noet:tw=78:ts=8:ft=help:norl:

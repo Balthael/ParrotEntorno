@@ -81,9 +81,11 @@ CTRL-SHIFT-Q	Works just like CTRL-V, but do not try to include the CTRL
 		modifier into the key.
 
 							*c_<Left>* *c_Left*
-<Left>		cursor left
+<Left>		cursor left.  See 'wildmenu' for behavior during wildmenu
+		completion mode.
 							*c_<Right>* *c_Right*
-<Right>		cursor right
+<Right>		cursor right.  See 'wildmenu' for behavior during wildmenu
+		completion mode.
 							*c_<S-Left>*
 <S-Left> or <C-Left>					*c_<C-Left>*
 		cursor one WORD left
@@ -93,14 +95,15 @@ CTRL-SHIFT-Q	Works just like CTRL-V, but do not try to include the CTRL
 CTRL-B or <Home>				*c_CTRL-B* *c_<Home>* *c_Home*
 		cursor to beginning of command-line
 CTRL-E or <End>					*c_CTRL-E* *c_<End>* *c_End*
-		cursor to end of command-line
+		cursor to end of command-line.  See 'wildmenu' for behavior
+		during wildmenu completion mode.
 
 							*c_<LeftMouse>*
 <LeftMouse>	Move the cursor to the position of the mouse click.
 
 							*c_<MiddleMouse>*
 <MiddleMouse>	Paste the contents of the clipboard (for X11 the primary
-		selection).  This is similar to using CTRL-R *, but no CR
+		selection).  This is similar to using `CTRL-R *`, but no CR
 		characters are inserted between lines.
 
 CTRL-H						*c_<BS>* *c_CTRL-H* *c_BS*
@@ -143,7 +146,7 @@ CTRL-R {register}					*c_CTRL-R* *c_<C-R>*
 				the last delete or yank
 			'%'	the current file name
 			'#'	the alternate file name
-			'*'	the clipboard contents (X11: primary selection)
+			"*"	the clipboard contents (X11: primary selection)
 			'+'	the clipboard contents
 			'/'	the last search pattern
 			':'	the last command-line
@@ -190,8 +193,8 @@ CTRL-R CTRL-L				*c_CTRL-R_CTRL-L* *c_<C-R>_<C-L>*
 
 					*c_CTRL-R_CTRL-R* *c_<C-R>_<C-R>*
 					*c_CTRL-R_CTRL-O* *c_<C-R>_<C-O>*
-CTRL-R CTRL-R {register CTRL-F CTRL-P CTRL-W CTRL-A CTRL-L}
-CTRL-R CTRL-O {register CTRL-F CTRL-P CTRL-W CTRL-A CTRL-L}
+CTRL-R CTRL-R `{register CTRL-F CTRL-P CTRL-W CTRL-A CTRL-L}`
+CTRL-R CTRL-O `{register CTRL-F CTRL-P CTRL-W CTRL-A CTRL-L}`
 		Insert register or object under the cursor.  Works like
 		|c_CTRL-R| but inserts the text literally.  For example, if
 		register a contains "xy^Hz" (where ^H is a backspace),
@@ -226,6 +229,7 @@ CTRL-\ e {expr}						*c_CTRL-\_e*
 CTRL-Y		When there is a modeless selection, copy the selection into
 		the clipboard.
 		If there is no selection CTRL-Y is inserted as a character.
+		See 'wildmenu' for behavior during wildmenu completion mode.
 
 							*c_CTRL-Z*
 CTRL-Z		Trigger 'wildmode'. Same as 'wildcharm', but always available.
@@ -248,10 +252,12 @@ CTRL-C		quit command-line without executing
 
 							*c_<Up>* *c_Up*
 <Up>		recall older command-line from history, whose beginning
-		matches the current command-line (see below).
+		matches the current command-line (see below).  See 'wildmenu'
+		for behavior during wildmenu completion mode.
 							*c_<Down>* *c_Down*
 <Down>		recall more recent command-line from history, whose beginning
-		matches the current command-line (see below).
+		matches the current command-line (see below).  See 'wildmenu'
+		for behavior during wildmenu completion mode.
 
 							*c_<S-Up>* *c_<PageUp>*
 <S-Up> or <PageUp>
@@ -267,14 +273,6 @@ CTRL-N		command-line completion (see |cmdline-completion|)
 CTRL-P		command-line completion (see |cmdline-completion|)
 CTRL-A		command-line completion (see |cmdline-completion|)
 CTRL-L		command-line completion (see |cmdline-completion|)
-
-							*c_CTRL-_*
-CTRL-_		Switch between Hebrew and English keyboard mode, which is
-		private to the command-line and not related to hkmap.
-		This is useful when Hebrew text entry is required in the
-		command-line, searches, abbreviations, etc.  Applies only if
-		the 'allowrevins' option is set.
-		See |rileft.txt|.
 
 							*c_CTRL-^*
 CTRL-^		Toggle the use of language |:lmap| mappings and/or Input
@@ -333,6 +331,7 @@ terminals)
 		A positive number represents the absolute index of an entry
 		as it is given in the first column of a :history listing.
 		This number remains fixed even if other entries are deleted.
+		(see |E1510|)
 
 		A negative number means the relative position of an entry,
 		counted from the newest entry (which has index -1) backwards.
@@ -358,6 +357,7 @@ When editing the command-line, a few commands can be used to complete the
 word before the cursor.  This is available for:
 
 - Command names: At the start of the command-line.
+- |++opt| values.
 - Tags: Only after the ":tag" command.
 - File names: Only after a command that accepts a file name or a setting for
   an option that can be set to a file name.  This is called file name
@@ -431,18 +431,22 @@ CTRL-T		When 'incsearch' is set, entering a search pattern for "/" or
 		keyboard T is above G.
 
 The 'wildchar' option defaults to <Tab> (CTRL-E when in Vi compatible mode; in
-a previous version <Esc> was used).  In the pattern standard wildcards '*' and
-'?' are accepted when matching file names.  '*' matches any string, '?'
-matches exactly one character.
+a previous version <Esc> was used).  In the pattern standard |wildcards| are
+accepted when matching file names.
 
 When repeating 'wildchar' or CTRL-N you cycle through the matches, eventually
 ending up back to what was typed.  If the first match is not what you wanted,
 you can use <S-Tab> or CTRL-P to go straight back to what you typed.
 
-The 'wildignorecase' option can be set to ignore case in filenames.
-
 The 'wildmenu' option can be set to show the matches just above the command
 line.
+
+The 'wildoptions' option provides additional configuration to use a popup menu
+for 'wildmenu', and to use fuzzy matching.
+
+The 'wildignorecase' option can be set to ignore case in filenames.  For
+completing other texts (e.g. command names), the 'ignorecase' option is used
+instead (fuzzy matching always ignores case, however).
 
 If you like tcsh's autolist completion, you can use this mapping:
 	:cnoremap X <C-L><C-D>
@@ -493,16 +497,26 @@ example, to match only files that end in ".c": >
 	:e *.c$
 This will not match a file ending in ".cpp".  Without the "$" it does match.
 
-The old value of an option can be obtained by hitting 'wildchar' just after
-the '='.  For example, typing 'wildchar' after ":set dir=" will insert the
-current value of 'dir'.  This overrules file name completion for the options
-that take a file name.
-
 If you would like using <S-Tab> for CTRL-P in an xterm, put this command in
 your .cshrc: >
 	xmodmap -e "keysym Tab = Tab Find"
 And this in your vimrc: >
 	:cmap <Esc>[1~ <C-P>
+<						*complete-set-option*
+When setting an option using |:set=|, the old value of an option can be
+obtained by hitting 'wildchar' just after the '='.  For example, typing
+'wildchar' after ":set dir=" will insert the current value of 'dir'.  This
+overrules file name completion for the options that take a file name.
+
+When using |:set=|, |:set+=|, or |:set^=|, string options that have
+pre-defined names or syntax (e.g. 'diffopt', 'listchars') or are a list of
+single-character flags (e.g. 'shortmess') will also present a list of possible
+values for completion when using 'wildchar'.
+
+When using |:set-=|, comma-separated options like 'diffopt' or 'backupdir'
+will show each item separately.  Flag list options like 'shortmess' will show
+both the entire old value and the individual flags.  Otherwise completion will
+just fill in with the entire old value.
 
 ==============================================================================
 3. Ex command-lines					*cmdline-lines*
@@ -732,7 +746,7 @@ An example for subtracting (which isn't very useful): >
 On this text:
 	1 one ~
 	2 two ~
-	3 three FOLDED~
+	3 three FOLDED ~
 	4 four FOLDED ~
 	5 five FOLDED ~
 	6 six FOLDED ~
@@ -902,9 +916,10 @@ Note: these are typed literally, they are not special keys!
 		   write.  *E495*
 							*:<abuf>* *<abuf>*
 	<abuf>     When executing autocommands, is replaced with the currently
-		   effective buffer number (for ":r file" and ":so file" it is
-		   the current buffer, the file being read/sourced is not in a
-		   buffer).  *E496*
+		   effective buffer number.  It is not set for all events,
+		   also see |bufnr()|.  For ":r file" and ":so file" it is the
+		   current buffer, the file being read/sourced is not in a
+		   buffer.  *E496*
 							*:<amatch>* *<amatch>*
 	<amatch>   When executing autocommands, is replaced with the match for
 		   which this autocommand was executed.  *E497*
@@ -980,7 +995,7 @@ These modifiers can be given, in this order:
 		precede any :r or :e.
 	:r	Root of the file name (the last extension removed).  When
 		there is only an extension (file name that starts with '.',
-		e.g., ".nvimrc"), it is not removed.  Can be repeated to 
+		e.g., ".nvimrc"), it is not removed.  Can be repeated to
 		remove several extensions (last one first).
 	:e	Extension of the file name.  Only makes sense when used alone.
 		When there is no extension the result is empty.
@@ -1057,7 +1072,7 @@ But expansion is only done if there are any wildcards before expanding the
 '%', '#', etc..  This avoids expanding wildcards inside a file name.  If you
 want to expand the result of <cfile>, add a wildcard character to it.
 Examples: (alternate file name is "?readme?")
-	command		expands to  ~
+	command		expands to >
 	:e #		:e ?readme?
 	:e `ls #`	:e {files matching "?readme?"}
 	:e #.*		:e {files matching "?readme?.*"}
@@ -1229,6 +1244,6 @@ The character used for the pattern indicates the type of command-line:
 	?	backward search string
 	=	expression for "= |expr-register|
 	@	string for |input()|
-	-	text for |:insert| or |:append|
+	`-`	text for |:insert| or |:append|
 
  vim:tw=78:ts=8:noet:ft=help:norl:

@@ -14,79 +14,19 @@ local function man_error(msg)
 end
 
 -- Run a system command and timeout after 30 seconds.
----@param cmd_ string[]
+---@param cmd string[]
 ---@param silent boolean?
----@param env string[]
+---@param env? table<string,string|number>
 ---@return string
-local function system(cmd_, silent, env)
-  local stdout_data = {} ---@type string[]
-  local stderr_data = {} ---@type string[]
-  local stdout = assert(vim.loop.new_pipe(false))
-  local stderr = assert(vim.loop.new_pipe(false))
+local function system(cmd, silent, env)
+  local r = vim.system(cmd, { env = env, timeout = 10000 }):wait()
 
-  local done = false
-  local exit_code ---@type integer?
-
-  -- We use the `env` command here rather than the env option to vim.loop.spawn since spawn will
-  -- completely overwrite the environment when we just want to modify the existing one.
-  --
-  -- Overwriting mainly causes problems NixOS which relies heavily on a non-standard environment.
-  local cmd = cmd_
-  if env then
-    cmd = { 'env' }
-    vim.list_extend(cmd, env)
-    vim.list_extend(cmd, cmd_)
-  end
-
-  local handle
-  handle = vim.loop.spawn(cmd[1], {
-    args = vim.list_slice(cmd, 2),
-    stdio = { nil, stdout, stderr },
-  }, function(code)
-    exit_code = code
-    stdout:close()
-    stderr:close()
-    handle:close()
-    done = true
-  end)
-
-  if handle then
-    stdout:read_start(function(_, data)
-      stdout_data[#stdout_data + 1] = data
-    end)
-    stderr:read_start(function(_, data)
-      stderr_data[#stderr_data + 1] = data
-    end)
-  else
-    stdout:close()
-    stderr:close()
-    if not silent then
-      local cmd_str = table.concat(cmd, ' ')
-      man_error(string.format('command error: %s', cmd_str))
-    end
-    return ''
-  end
-
-  vim.wait(30000, function()
-    return done
-  end)
-
-  if not done then
-    if handle then
-      handle:close()
-      stdout:close()
-      stderr:close()
-    end
+  if r.code ~= 0 and not silent then
     local cmd_str = table.concat(cmd, ' ')
-    man_error(string.format('command timed out: %s', cmd_str))
+    man_error(string.format("command error '%s': %s", cmd_str, r.stderr))
   end
 
-  if exit_code ~= 0 and not silent then
-    local cmd_str = table.concat(cmd, ' ')
-    man_error(string.format("command error '%s': %s", cmd_str, table.concat(stderr_data)))
-  end
-
-  return table.concat(stdout_data)
+  return assert(r.stdout)
 end
 
 ---@param line string
@@ -298,7 +238,7 @@ local function get_path(sect, name, silent)
   -- If you run man -w strlen and string.3 comes up first, this is a problem. We
   -- should search for a matching named one in the results list.
   -- However, if you search for man -w clock_gettime, you will *only* get
-  -- clock_getres.2, which is the right page. Searching the resuls for
+  -- clock_getres.2, which is the right page. Searching the results for
   -- clock_gettime will no longer work. In this case, we should just use the
   -- first one that was found in the correct section.
   --
@@ -312,7 +252,7 @@ local function get_path(sect, name, silent)
   end
 
   local lines = system(cmd, silent)
-  local results = vim.split(lines or {}, '\n', { trimempty = true })
+  local results = vim.split(lines, '\n', { trimempty = true })
 
   if #results == 0 then
     return
@@ -471,15 +411,13 @@ local function find_man()
   return false
 end
 
----@param pager boolean
-local function set_options(pager)
+local function set_options()
   vim.bo.swapfile = false
   vim.bo.buftype = 'nofile'
-  vim.bo.bufhidden = 'hide'
+  vim.bo.bufhidden = 'unload'
   vim.bo.modified = false
   vim.bo.readonly = true
   vim.bo.modifiable = false
-  vim.b.pager = pager
   vim.bo.filetype = 'man'
 end
 
@@ -496,7 +434,7 @@ local function get_page(path, silent)
   elseif vim.env.MANWIDTH then
     manwidth = vim.env.MANWIDTH
   else
-    manwidth = api.nvim_win_get_width(0)
+    manwidth = api.nvim_win_get_width(0) - vim.o.wrapmargin
   end
 
   local cmd = localfile_arg and { 'man', '-l', path } or { 'man', path }
@@ -505,9 +443,9 @@ local function get_page(path, silent)
   -- http://comments.gmane.org/gmane.editors.vim.devel/29085
   -- Set MAN_KEEP_FORMATTING so Debian man doesn't discard backspaces.
   return system(cmd, silent, {
-    'MANPAGER=cat',
-    'MANWIDTH=' .. manwidth,
-    'MAN_KEEP_FORMATTING=1',
+    MANPAGER = 'cat',
+    MANWIDTH = manwidth,
+    MAN_KEEP_FORMATTING = 1,
   })
 end
 
@@ -532,10 +470,16 @@ local function put_page(page)
   -- XXX: nroff justifies text by filling it with whitespace.  That interacts
   -- badly with our use of $MANWIDTH=999.  Hack around this by using a fixed
   -- size for those whitespace regions.
-  vim.cmd([[silent! keeppatterns keepjumps %s/\s\{199,}/\=repeat(' ', 10)/g]])
+  -- Use try/catch to avoid setting v:errmsg.
+  vim.cmd([[
+    try
+      keeppatterns keepjumps %s/\s\{199,}/\=repeat(' ', 10)/g
+    catch
+    endtry
+  ]])
   vim.cmd('1') -- Move cursor to first line
   highlight_man_page()
-  set_options(false)
+  set_options()
 end
 
 local function format_candidate(path, psect)
@@ -722,7 +666,8 @@ function M.init_pager()
     vim.cmd.file({ 'man://' .. fn.fnameescape(ref):lower(), mods = { silent = true } })
   end
 
-  set_options(true)
+  vim.g.pager = true
+  set_options()
 end
 
 ---@param count integer
@@ -769,28 +714,30 @@ function M.open_page(count, smods, args)
   end
 
   sect, name = extract_sect_and_name_path(path)
-  local buf = fn.bufnr()
+  local buf = api.nvim_get_current_buf()
   local save_tfu = vim.bo[buf].tagfunc
   vim.bo[buf].tagfunc = "v:lua.require'man'.goto_tag"
 
   local target = ('%s(%s)'):format(name, sect)
 
   local ok, ret = pcall(function()
-    if smods.tab == -1 and find_man() then
-      vim.cmd.tag({ target, mods = { silent = true, keepalt = true } })
+    smods.silent = true
+    smods.keepalt = true
+    if smods.hide or (smods.tab == -1 and find_man()) then
+      vim.cmd.tag({ target, mods = smods })
     else
-      smods.silent = true
-      smods.keepalt = true
       vim.cmd.stag({ target, mods = smods })
     end
   end)
 
-  vim.bo[buf].tagfunc = save_tfu
+  if api.nvim_buf_is_valid(buf) then
+    vim.bo[buf].tagfunc = save_tfu
+  end
 
   if not ok then
     error(ret)
   else
-    set_options(false)
+    set_options()
   end
 
   vim.b.man_sect = sect

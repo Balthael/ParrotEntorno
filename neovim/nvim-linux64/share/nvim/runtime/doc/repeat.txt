@@ -56,7 +56,7 @@ Using the underscore after `:d` avoids clobbering registers or the clipboard.
 This also makes it faster.
 
 Instead of the '/' which surrounds the {pattern}, you can use any other
-single byte character, but not an alphabetic character, '\', '"' or '|'.
+single byte character, but not an alphabetic character, '\', '"', '|' or '!'.
 This is useful if you want to include a '/' in the search pattern or
 replacement string.
 
@@ -148,9 +148,19 @@ q			Stops recording.
 							*@@* *E748*
 @@			Repeat the previous @{0-9a-z":*} [count] times.
 
+							*v_@-default*
+{Visual}@{0-9a-z".=*+}	In linewise Visual mode, execute the contents of the
+{Visual}@@		register for each selected line.
+			See |visual-repeat|, |default-mappings|.
+
 							*Q*
 Q			Repeat the last recorded register [count] times.
 			See |reg_recorded()|.
+
+							*v_Q-default*
+{Visual}Q		In linewise Visual mode, repeat the last recorded
+			register for each selected line.
+			See |visual-repeat|, |default-mappings|.
 
 							*:@*
 :[addr]@{0-9a-z".=*+}	Execute the contents of register {0-9a-z".=*+} as an Ex
@@ -182,8 +192,11 @@ Using Vim scripts					*using-scripts*
 For writing a Vim script, see chapter 41 of the user manual |usr_41.txt|.
 
 					*:so* *:source* *load-vim-script*
-:[range]so[urce] [file]	Runs |Ex| commands or Lua code (".lua" files) from
-			[file], or current buffer if no [file].
+:[range]so[urce] [file]	Runs |Ex-commands| or Lua code (".lua" files) from
+			[file].
+			If no [file], the current buffer is used and treated
+			as Lua code if 'filetype' is "lua" or its filename
+			ends with ".lua".
 			Triggers the |SourcePre| autocommand.
 							*:source!*
 :[range]so[urce]! {file}
@@ -222,11 +235,15 @@ For writing a Vim script, see chapter 41 of the user manual |usr_41.txt|.
 
 			When {file} contains wildcards it is expanded to all
 			matching files.  Example: >
-				:runtime! plugin/**/*.vim
-<			This is what Vim uses to load the plugin files when
+				:runtime! plugin/**/*.{vim,lua}
+<			This is what Nvim uses to load the plugin files when
 			starting up.  This similar command: >
-				:runtime plugin/**/*.vim
+				:runtime plugin/**/*.{vim,lua}
 <			would source the first file only.
+
+			For each {file} pattern, if two `.vim` and `.lua` file
+			names match and differ only in extension, the `.vim`
+			file is sourced first.
 
 			When 'verbose' is one or higher, there is a message
 			when no file could be found.
@@ -257,8 +274,8 @@ For writing a Vim script, see chapter 41 of the user manual |usr_41.txt|.
 			'runtimepath'.
 
 			If the filetype detection was already enabled (this
-			is usually done with a "syntax enable" or "filetype
-			on" command in your |init.vim|, or automatically during
+			is usually done with a `syntax enable` or `filetype on`
+			command in your |vimrc|, or automatically during
 			|initialization|), and the package was found in
 			"pack/*/opt/{name}", this command will also look
 			for "{name}/ftdetect/*.vim" files.
@@ -336,6 +353,7 @@ For writing a Vim script, see chapter 41 of the user manual |usr_41.txt|.
 :scr[iptnames]		List all sourced script names, in the order they were
 			first sourced.  The number is used for the script ID
 			|<SID>|.
+			Also see `getscriptinfo()`.
 
 :scr[iptnames][!] {scriptId}			*:script*
 			Edit script {scriptId}.  Although ":scriptnames name"

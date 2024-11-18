@@ -114,6 +114,13 @@ wiped out a buffer which contains a mark or is referenced in another way.
 You cannot have two buffers with exactly the same name.  This includes the
 path leading to the file.
 
+							*E1513* >
+  Cannot switch buffer. 'winfixbuf' is enabled
+
+If a window has 'winfixbuf' enabled, you cannot change that window's current
+buffer. You need to set 'nowinfixbuf' before continuing. You may use [!] to
+force the window to switch buffers, if your command supports it.
+
 							*E72*  >
   Close error on swap file
 
@@ -327,7 +334,7 @@ You can switch the 'write' option on with ":set write".
 							*E25*  >
   Nvim does not have a built-in GUI
 
-Neovim does not have a built in GUI, so `:gvim` and `:gui` don't work.
+Nvim does not have a built in GUI, so `:gvim` and `:gui` don't work.
 
 							*E49*  >
   Invalid scroll size
@@ -820,13 +827,13 @@ Type					effect ~
 					the clipboard ("* and "+ registers)
     {menu-entry}			what the menu is defined to in
 					Cmdline-mode.
-    <LeftMouse>				next page (*)
+    <LeftMouse>				next page*
 
 Any other key causes the meaning of the keys to be displayed.
 
-(*)  Clicking the left mouse button only works:
-     - For the GUI: in the last line of the screen.
-     - When 'r' is included in 'mouse' (but then selecting text won't work).
+* Clicking the left mouse button only works:
+    - For the GUI: in the last line of the screen.
+    - When 'r' is included in 'mouse' (but then selecting text won't work).
 
 
 Note: The typed key is directly obtained from the terminal, it is not mapped

@@ -77,8 +77,8 @@ Cada linea de comando por separado.
 - `mv /home/balthael/ParrotEntorno/neovim/nvim-linux64 .` Movemos la carpeta nvim-linux64 que esta en el repositorio del entorno que clonamos  a la ruta creada.
 - Nos cambiamos a usuario no privilegiado
 - `cd /opt/nvim/nvim-linux64/bin `
+- `sudo apt remove neovim`
 - `./nvim` 
-- `sudo apt remove neovim`  
 - `nvim`
 
 ```
