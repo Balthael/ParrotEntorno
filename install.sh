@@ -34,7 +34,7 @@ sleep 5
 echo "Definir el directorio home del usuario..."
 sleep 2
 user_home=$(getent passwd $SUDO_USER | cut -d: -f6)
-
+user=$(getent passwd $SUDO_USER | cut -d: -f6 | grep -oE '[^/]+$')
 sleep 5
 
 # Clonar y compilar bspwm y sxhkd en el home del usuario
@@ -547,7 +547,8 @@ echo "i3lock-fancy instalado correctamente."
 sleep 5
 
 sudo chsh -s $(which zsh) root
-
+sudo chsh -s $(which zsh) $user
+export TERM=xterm-256color
 # Reiniciar la sesión de usuario
 echo "Reiniciando la sesión de usuario..."
 kill -9 -1

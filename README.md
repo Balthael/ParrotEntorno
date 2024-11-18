@@ -63,6 +63,11 @@ git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 ```
 
+### Ejecute este comando para evitar problemas en la zsh
+- user=$(getent passwd $SUDO_USER | cut -d: -f6 | grep -oE '[^/]+$')
+- sudo chsh -s $(which zsh) $user
+
+
 ### Instalación de Neovim
 
 #### Para Usuario No Privilegiado:
