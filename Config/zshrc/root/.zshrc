@@ -14,8 +14,17 @@ function settarget(){
     echo "$ip_address $machine_name" > $HOME/.config/bin/target
 }
 
+function burp(){
+  "$HOME/BurpSuitePro/jre/bin/java" "--add-opens=java.desktop/javax.swing=ALL-UNNAMED" "--add-opens=java.base/java.lang=ALL-UNNAMED" "--add-opens=java.base/jdk.internal.org.objectweb.asm=ALL-UNNAMED" "--add-opens=java.base/jdk.internal.org.objectweb.asm.tree=ALL-UNNAMED" "--add-opens=java.base/jdk.internal.org.objectweb.asm.Opcodes=ALL-UNNAMED" "-javaagent:$HOME/BurpSuitePro/BurpLoaderKeygen.jar" "-noverify" "-jar" "$HOME/BurpSuitePro/burpsuite_pro.jar" &>/dev/null & disown
+}
+
+function obsi(){
+  /usr/bin/obsidian &>/dev/null & disown
+  
+}
+
 function cleartarget(){
-        echo '' > $HOME/.config/bin/target
+	echo '' > $HOME/.config/bin/target
 }
 
 function mkt(){
@@ -51,7 +60,57 @@ setopt numericglobsort     # sort filenames numerically when it makes sense
 setopt promptsubst         # enable command substitution in prompt
 
 WORDCHARS=${WORDCHARS//\/} # Don't consider certain characters part of the word
-export PATH=/opt/nvim/nvim-linux64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games:$HOME/.fzf/bin
+
+# Tools Path
+TOOLS_PATH=(
+    "$HOME/tools/bin"
+    "$HOME/tools/web/karma"
+    "$HOME/tools/web/shcheck/shcheck"
+    "$HOME/tools/web/securityheaders"
+    "$HOME/tools/web/favicon-hashtrick"
+    "$HOME/tools/windows/AD/kerbrute"
+    "$HOME/tools/windows/AD"
+    "$HOME/tools/windows/AD/bloodyAD"
+    "$HOME/tools/windows/AD/pywhisker/pywhisker"
+    "$HOME/tools/windows/AD/BloodHound"
+    "$HOME/tools/windows/AD/evil-winrm/bin"
+    "$HOME/tools/windows/AD/powerview"
+    "$HOME/tools/custom-scripts"
+   )
+
+# System or Framework Paths
+SYSTEM_PATHS=(
+    "$HOME/.local/bin"
+    "$HOME/.pyenv/bin"
+    "$HOME/go/bin"
+    "$HOME/go/bin"
+    "/root/go/bin"
+    "/opt/nvim/nvim-linux64/bin"
+    "/usr/local/sbin"
+    "/usr/local/bin"
+    "/usr/sbin"
+    "/usr/bin"
+    "/sbin"
+    "/bin"
+    "/usr/local/games"
+    "/usr/games"
+    "$HOME/.fzf/bin"
+    "/usr/share/doc/python3-impacket/examples"
+    "$HOME/.local/bin"
+    "/root/.local/bin"
+)
+
+# Agrego todas las rutas verificando que existan
+for dir in "${TOOLS_PATH[@]}" "${SYSTEM_PATHS[@]}"; do
+    [[ -d "$dir" && ":$PATH:" != *":$dir:"* ]] && export PATH="$dir:$PATH"
+done
+
+# Limpo variables temporales
+unset TOOLS_PATH SYSTEM_PATHS
+
+
+
+#export PATH=$HOME/Desktop/balthael/Tools/bloodyAD:$HOME/Desktop/balthael/Tools/windows/AD:$HOME/go/bin:/root/go/bin:/opt/nvim/nvim-linux64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games:$HOME/.fzf/bin:/usr/share/doc/python3-impacket/examples:/opt/kerbrute:$HOME/.local/bin
 
 # hide EOL sign ('%')
 PROMPT_EOL_MARK=""
@@ -191,7 +250,7 @@ if [ "$color_prompt" = yes ]; then
         ZSH_HIGHLIGHT_STYLES[command-substitution-delimiter]=fg=magenta,bold
         ZSH_HIGHLIGHT_STYLES[process-substitution]=none
         ZSH_HIGHLIGHT_STYLES[process-substitution-delimiter]=fg=magenta,bold
-        ZSH_HIGHLIGHT_STYLES[single-hyphen-option]=fg=green
+        ZSH_HIGHLIGHT_STYLES[single-hyphen-option]=fg=red,bold
         ZSH_HIGHLIGHT_STYLES[double-hyphen-option]=fg=green
         ZSH_HIGHLIGHT_STYLES[back-quoted-argument]=none
         ZSH_HIGHLIGHT_STYLES[back-quoted-argument-delimiter]=fg=blue,bold
@@ -207,7 +266,7 @@ if [ "$color_prompt" = yes ]; then
         ZSH_HIGHLIGHT_STYLES[comment]=fg=black,bold
         ZSH_HIGHLIGHT_STYLES[named-fd]=none
         ZSH_HIGHLIGHT_STYLES[numeric-fd]=none
-        ZSH_HIGHLIGHT_STYLES[arg0]=fg=cyan
+        ZSH_HIGHLIGHT_STYLES[arg0]=fg=green,bold
         ZSH_HIGHLIGHT_STYLES[bracket-error]=fg=red,bold
         ZSH_HIGHLIGHT_STYLES[bracket-level-1]=fg=blue,bold
         ZSH_HIGHLIGHT_STYLES[bracket-level-2]=fg=green,bold
@@ -293,7 +352,7 @@ alias l='ls -CF'
 if [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ]; then
     . /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
     # change suggestion color
-    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#999'
+    ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#2d55e3'
 fi
 
 if [ -f /usr/share/zsh-sudo-plugin/sudo.plugin.zsh ]; then
@@ -324,5 +383,8 @@ alias l='lsd --group-dirs=first'
 alias lla='lsd -lha --group-dirs=first'
 alias ls='lsd --group-dirs=first'
 
-
 export LS_COLORS="rs=0:di=34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:"
+
+
+
+
