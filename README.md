@@ -9,6 +9,7 @@ Bienvenidos a la guía de personalización del entorno de S4vitar en Parrot. Aqu
 
 Puedes seguir el video tutorial paso a paso en mi [canal de YouTube](https://youtu.be/rY6S9CS6KDc). Si el contenido es de tu agrado, considera suscribirte y seguirme en [LinkedIn](https://www.linkedin.com/in/johnosoriob/).
 
+Recuerda que este script esta diseñado para un sistema operavito Parrot en Español, si lo quieres en Ingles, cambia en el install.sh Descargas por Downloads.
 ## Instalación
 
 Clona el repositorio y prepara la instalación con los siguientes comandos:
