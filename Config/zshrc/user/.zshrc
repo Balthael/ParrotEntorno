@@ -18,20 +18,10 @@ function avpn(){
 function monitor(){
     $HOME/.config/bspwm/setup_monitors.sh
 }
-#function onedrivekali(){
-#    gio mount smb://balthael@PCBALTHA/Kali
-                                                  
-#}
 
 function telegram(){
     $HOME/Downloads/Telegram/Telegram &>/dev/null & disown
 }
-
-
-#function kpmg(){
-#    cd  /run/user/1000/gvfs/smb-share:server=pcbaltha,share=kali,user=balthael
-
-#}
 
 
 function discordd(){
