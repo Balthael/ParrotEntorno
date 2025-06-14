@@ -17,8 +17,12 @@ bspc rule -a mplayer2 state=floating
 bspc rule -a Kupfer.py focus=on
 bspc rule -a Screenkey manage=off
 
+bspc config normal_border_color "#44475a"
+bspc config active_border_color "#6272a4"
+bspc config focused_border_color "#ff79c6"
+
 # Establece el fondo de pantalla usando la variable $HOME para el directorio del usuario
-/usr/bin/feh --bg-fill "$HOME/fondos/fondo10.png" &
+/usr/bin/feh --bg-fill "$HOME/fondos/fondo37.jpg" &
 
 # Iniciar otras aplicaciones
 vmware-user-suid-wrapper &
@@ -28,5 +32,4 @@ wmname LG3D &
 flameshot &
 
 # Configuración final de bspwm
-bspc config border_width 0
-
+#bspc config border_width 0
