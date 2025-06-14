@@ -8,6 +8,39 @@ fi
 # Fix the Java Problem
 export _JAVA_AWT_WM_NONREPARENTING=1
 
+#VPN HTB Academia
+function avpn(){
+    sudo openvpn $HOME/Documents/HTB/vpn/academy-regular.ovpn
+}
+
+
+#Configurar monitoores
+function monitor(){
+    $HOME/.config/bspwm/setup_monitors.sh
+}
+#function onedrivekali(){
+#    gio mount smb://balthael@PCBALTHA/Kali
+                                                  
+#}
+
+function telegram(){
+    $HOME/Downloads/Telegram/Telegram &>/dev/null & disown
+}
+
+
+#function kpmg(){
+#    cd  /run/user/1000/gvfs/smb-share:server=pcbaltha,share=kali,user=balthael
+
+#}
+
+
+function discordd(){
+    /usr/bin/discord &> /dev/null & disown
+}
+function virt(){
+    /usr/bin/virtualbox &> /dev/null & disown
+}
+
 function settarget(){
     ip_address=$1
     machine_name=$2
@@ -369,9 +402,9 @@ source $HOME/powerlevel10k/powerlevel10k.zsh-theme
 # Custom Aliases
 # -----------------------------------------------
 # bat
-alias cat='bat'
-alias catn='bat --style=plain'
-alias catnp='bat --style=plain --paging=never'
+alias cat='batcat'
+alias catn='batcat --style=plain'
+alias catnp='batcat --style=plain --paging=never'
 
 # ls
 alias ll='lsd -lh --group-dirs=first'
