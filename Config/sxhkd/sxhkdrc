@@ -122,7 +122,7 @@ super + shift + {Left,Down,Up,Right}
 
 # Custom Resize
 alt + super + {Left,Down,Up,Right}
-	/home/balthael/.config/bspwm/scripts/bspwm_resize {west,south,north,east}
+	$HOME/.config/bspwm/scripts/bspwm_resize {west,south,north,east}
 
 # chromium
 super + shift + g
@@ -142,4 +142,4 @@ ctrl + alt + t
 
 # i3lock-fancy
 super + shift + x
-  /home/balthael/Downloads/i3lock-fancy/i3lock-fancy -t "Tu Password Balthael" -f /usr/local/share/fonts/HackNerdFont-Regular.ttf
+  $HOME/Downloads/i3lock-fancy/i3lock-fancy -t "Tu Password " -f /usr/local/share/fonts/HackNerdFont-Regular.ttf
