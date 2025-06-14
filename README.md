@@ -128,6 +128,7 @@ Atajos (Personalización de entorno en Linux)
 | `Windows + Shift + Q` | Volver a la pantalla de bloqueo          |
 | `Esc + Esc`           | Sudo                                     |
 | `Ctrl + Alt + Mouse`  | Seleccionar copiar/pegar en modo Columna |
+| `Windows + Shift + X` | Bloquear Entorno                         |
 
 #### 🔹 Polybar
 
