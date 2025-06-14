@@ -142,4 +142,4 @@ ctrl + alt + t
 
 # i3lock-fancy
 super + shift + x
-  $HOME/Descargas/i3lock-fancy/i3lock-fancy -t "Tu Password " -f /usr/local/share/fonts/HackNerdFont-Regular.ttf
+  $HOME/Descargas/i3lock-fancy/i3lock-fancy -t "Tu Password" -f /usr/local/share/fonts/HackNerdFont-Regular.ttf
