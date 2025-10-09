@@ -15,6 +15,9 @@ Recuerda que este script esta diseñado para un sistema operavito Parrot en Espa
 Clona el repositorio y prepara la instalación con los siguientes comandos:
 
 ```bash
+sudo apt update
+sudo apt upgrade
+#El sistema debe estar actualizado.
 git clone https://github.com/Balthael/ParrotEntorno
 cd ParrotEntorno
 chmod +x install.sh
