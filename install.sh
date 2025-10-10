@@ -22,7 +22,14 @@ sudo parrot-upgrade
 # Intentar instalar dependencias
 echo "Instalando depetendencias..."
 sleep 5
-deps=("build-essential" "git" "vim" "xcb" "libxcb-util0-dev" "libxcb-ewmh-dev" "libxcb-randr0-dev" "libxcb-icccm4-dev" "libxcb-keysyms1-dev" "libxcb-xinerama0-dev" "libasound2-dev" "libxcb-xtest0-dev" "libxcb-shape0-dev")
+deps=(
+  "build-essential" "git" "vim" "pkg-config"
+  "libxcb1-dev" "libxcb-util0-dev" "libxcb-ewmh-dev" "libxcb-randr0-dev"
+  "libxcb-icccm4-dev" "libxcb-keysyms1-dev" "libxcb-xinerama0-dev"
+  "libxcb-xtest0-dev" "libxcb-shape0-dev"
+  "libxkbcommon-dev" "libxkbcommon-x11-dev" "libxcb-xkb-dev"
+  "libasound2-dev" "meson" "ninja-build"
+)
 for dep in "${deps[@]}"; do
     if ! sudo apt install -y "$dep"; then
         echo "Advertencia: No se pudo instalar el paquete $dep. Intentando continuar..."
